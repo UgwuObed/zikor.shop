@@ -78,7 +78,7 @@ export default {
       });
     },
     upload() {
-      // Add functionality for upload button here
+      this.$router.push('/add-product');
     }
   }
 }

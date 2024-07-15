@@ -268,8 +268,9 @@ label {
    }
 
   .zikor-logo img {
-    height: 35px;
+    height: 65px;
     margin-top: 0;
+    margin-right: 290px;
   }
 
 .error-message {
