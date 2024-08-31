@@ -2,7 +2,7 @@
   <div class="landing-page">
     <div class="header">
       <div class="zikor-logo">
-        <img src="../assets/zikor-logo.png" alt="Logo">
+        <img src="../assets/zikor-logo.png" alt="Logo" style="width: 50px; height: 60px;">
       </div>
       <div class="hamburger-menu" v-if="isMobile">
         <template v-if="!showMenu">
@@ -87,39 +87,41 @@
 
  <div class="why-choose-section">
   <h2>Why Choose Zikor</h2>
-  
-<div class="why-choose-grid">
+  <div class="why-choose-grid">
     <div class="why-choose-item">
-        <h3>Smart Selling, Simplified </h3>
-        <img src="../assets/why1.png" alt="Additional Image">
-    </div>  
-<div class="why-choose-item">
-    <h3>Negotiate Like a Pro 🤝💰</h3>
-      <img src="../assets/why2.png" alt="Additional Image">
+      <div class="why-choose-card">
+        <h3>Smart Selling, Simplified</h3>
+        <p>Experience a seamless and efficient way to sell your products with Zikor’s smart tools.</p>
+      </div>
     </div>
-<div class="why-choose-item">
-    <h3>Secure and Swift Transactions 💳✨</h3>
-      <img src="../assets/why3.png" alt="Additional Image">
+    <div class="why-choose-item">
+      <div class="why-choose-card">
+        <h3>Negotiate Like a Pro 🤝💰</h3>
+        <p>Leverage powerful negotiation features to get the best deals for your business.</p>
+      </div>
     </div>
-
+    <div class="why-choose-item">
+      <div class="why-choose-card">
+        <h3>Secure and Swift Transactions 💳✨</h3>
+        <p>Enjoy fast and secure payments with our robust transaction system.</p>
+      </div>
+    </div>
   </div>
 </div>
+
 
 <div class="advantage-section">
   <h2>The Zikor Advantage</h2>
   <div class="advantage-container">
       <img src="../assets/vid.png" alt="Additional Image">
-  </div>
+  </div> <br>
 </div>
-
-<div class="blog-card">
-  <div class="blog-content">
-    <h3 class="blog-title">Blog</h3>
-    <p class="blog-description">Dive deeper into industry insights, product updates, and expert tips with Zikor's blog. Stay informed and inspired as we explore the latest trends and innovations in the world of e-commerce.</p>
-  </div>
-</div>
-
 <div class="about-card">
+  <div class="about-logo">
+    <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M2 4.5C2 3.67157 2.67157 3 3.5 3H20.5C21.3284 3 22 3.67157 22 4.5V19.5C22 20.3284 21.3284 21 20.5 21H3.5C2.67157 21 2 20.3284 2 19.5V4.5ZM5 6V8H19V6H5ZM5 10V12H19V10H5ZM5 14V16H15V14H5Z" fill="#FFCF00"/>
+    </svg>
+  </div>
   <div class="about-content">
     <h3 class="about-title">About Zikor</h3>
     <p class="about-description">Discover the story behind Zikor – our mission, values, and the team dedicated to revolutionizing online commerce.</p>
@@ -127,6 +129,11 @@
 </div>
 
 <div class="faq-card">
+  <div class="faq-logo">
+    <svg width="50" height="50" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2C6.48 2 2 5.58 2 10.5C2 13.41 3.64 16.07 6.22 17.68L5.08 21.33C5.02 21.54 5.11 21.75 5.3 21.86C5.38 21.91 5.47 21.93 5.55 21.93C5.68 21.93 5.81 21.89 5.91 21.79L10.3 17.77C10.87 17.92 11.43 18 12 18C17.52 18 22 14.42 22 9.5C22 4.58 17.52 2 12 2ZM12 16C11.46 16 10.92 15.91 10.41 15.73L9.92 15.54L7.57 17.28L8.22 15.02L7.66 14.67C5.86 13.55 5 11.98 5 10.5C5 7.42 8.58 5 12 5C15.42 5 19 7.42 19 10.5C19 13.58 15.42 16 12 16ZM11 9H13V10.59L14.59 12L13 13.41V15H11V12.59L12.59 11L11 9Z" fill="#FFCF00"/>
+    </svg>
+  </div>
   <div class="faq-content">
     <h3 class="faq-title">FAQ</h3>
     <p class="faq-description">Find answers to common questions and get the assistance you need with Zikor's FAQ section.</p>
@@ -259,11 +266,13 @@ export default {
   justify-content: space-between;
   align-items: center;
   padding: 10px;
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(151, 150, 150, 0.2);
 }
 
-.zikor-logo img {
+.zikor-logo {
     height: 40px;
-    margin-top: 5px;
+    margin-left: -6%;
 }
 
 
@@ -290,7 +299,7 @@ export default {
 .typing_out,
 .typing_in {
   
-  animation: typing 0.8s ease-in-out forwards;
+  animation: typing 0.30s ease-in-out forwards;
 }
 
 .button-container {
@@ -352,16 +361,43 @@ export default {
 }
 
 
+.why-choose-section {
+  text-align: center;
+  padding: 20px;
+}
+
 .why-choose-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   grid-gap: 20px;
+  margin-top: 20px;
 }
 
-
-.why-choose-item ul{
-   list-style-type: circle;
+.why-choose-item {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
+
+.why-choose-card {
+  background-color: #f8f9fa;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  text-align: left;
+  width: 100%;
+}
+
+.why-choose-card h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.why-choose-card p {
+  margin-bottom: 0;
+  color: #555;
+}
+
 
 .zikor-advantage img {
   height: 300px;  
@@ -400,73 +436,63 @@ export default {
   list-style-type: none;
 }
 
-.blog-card {
+.blog-card, .about-card, .faq-card {
   background-color: rgba(255, 199, 0, 0.15); 
   padding: 20px;
   display: flex;
-  align-items: center;
+  flex-direction: column; 
+  align-items: flex-start;
+  border-radius: 10px; 
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
+  margin-bottom: 20px; 
+  transition: transform 0.3s ease, box-shadow 0.3s ease; 
 }
 
-.blog-logo {
-  width: 50px; 
-  height: 50px;
-  margin-right: 20px;
+
+.blog-card:hover, .about-card:hover, .faq-card:hover {
+  transform: translateY(-5px); 
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2); 
 }
 
-.blog-title {
-  font-size: 1.2rem;
+
+.blog-title, .about-title, .faq-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333; 
   margin-bottom: 10px;
 }
 
-.blog-description {
+.blog-description, .about-description, .faq-description {
   font-size: 1rem;
-  line-height: 1.4;
+  line-height: 1.6;
+  color: #555; 
+  margin-bottom: 0;
 }
 
-.about-card {
-  background-color: rgba(255, 199, 0, 0.15);
-  padding: 20px;
-  display: flex;
-  align-items: center;
-}
-
-.about-logo {
-  width: 50px; 
-  height: 50px;
-  margin-right: 20px;
-}
-
-.about-title {
-  font-size: 1.2rem;
-  margin-bottom: 10px;
-}
-
-.about-description {
-  font-size: 1rem;
-  line-height: 1.4;
-}
-
-.faq-card {
-  background-color: rgba(255, 199, 0, 0.15); 
-  display: flex;
-  align-items: center;
-}
-
-.faq-logo {
+/* Optional Icon or Logo Styles */
+.blog-logo, .about-logo, .faq-logo {
   width: 50px;
   height: 50px;
-  margin-right: 20px;
+  margin-bottom: 10px; 
+  border-radius: 50%; 
 }
 
-.faq-title {
-  font-size: 1.2rem;
-  margin-bottom: 10px;
+@media (min-width: 768px) {
+  .blog-card, .about-card, .faq-card {
+    flex-direction: row; 
+    align-items: center;
+  }
+
+  .blog-logo, .about-logo, .faq-logo {
+    margin-right: 20px; 
+    margin-bottom: 0; 
+  }
+
+  .blog-content, .about-content, .faq-content {
+    flex: 1; 
+  }
 }
 
-.faq-description {
-  font-size: 1rem;
-  line-height: 1.4;
-}
 
 .footer {
   background-color: #5E17EB;
