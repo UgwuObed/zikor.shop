@@ -54,8 +54,7 @@
           <path d="M19 12H5M12 19l-7-7 7-7" />
         </svg>
       </div>
-
-
+      
     <h2>Set Up Business Page</h2>
     <p>Create your business page now to seize new opportunities.</p>
     <div class="form-group">
@@ -108,7 +107,6 @@
   </div>
 </template>
 
-
 <script>
 import axios from 'axios';
 import { BASE_URL } from '../config';
@@ -116,22 +114,17 @@ import { BASE_URL } from '../config';
 export default {
   data() {
     return {
-      // Signup form data
       first_name: '',
       last_name: '',
       email: '',
       password: '',
       password_confirmation: '', 
-
-      // Business setup form data
       business_name: '',
       phone: '',
       country: '',
       state: '',
       city: '',
       is_cac_registered: '',
-
-      // Step management
       currentStep: 'signup',
       errorMessage: '',
       isLoading: false,
@@ -148,7 +141,7 @@ export default {
       localStorage.removeItem('isAuthenticated');
       this.$router.push('/login');
     },
-    // Signup form validation and submission
+  
     validateSignup() {
       return (
         this.first_name &&
@@ -187,9 +180,6 @@ export default {
       );
     },
     submitForms() {
-       
-       localStorage.removeItem('accessToken');
-       
       this.isLoading = true;
       this.errorMessage = '';
 
@@ -198,31 +188,18 @@ export default {
 
         axios.post(`${BASE_URL}/api/register`, formData)
           .then(response => {
+            const { token } = response.data;
 
-            const {token, redirect } = response.data;
-
-
-            // Store the access token in localStorage for later use
+            
             localStorage.setItem('accessToken', token);
 
-
-            // Check if a redirect URL is provided
-            if (redirect) {
-              if (this.routeExists(redirect)) {
-                // Redirect to the specified URL
-                window.location.href = redirect;
-              } else {
-                console.error('Redirect URL does not exist on the frontend:', redirect);
-              }
-            } else {
-              console.error('Redirect URL not found in response.');
-            }
+            this.$router.push('/account');
             this.isLoading = false;
           })
           .catch(error => {
             console.error('Registration failed:', error);
 
-            // Handle errors
+
             if (error.response && error.response.data && error.response.data.errors) {
               console.log('Error response:', error.response.data); 
               const errors = error.response.data.errors;
@@ -237,7 +214,6 @@ export default {
   },
 };
 </script>
-
 
 <style scoped>
 
