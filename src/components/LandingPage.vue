@@ -58,7 +58,7 @@
         <h1>Start Selling with</h1>
         <h2>a whole new groove!<br>🚀💼</h2>
         <p>
-          Zikor brings you a <span class="highlight-animation" :class="{ typing_out: isTypingOut, typing_in: isTypingIn }">cutting-edge</span> chat technology commerce platform, transforming the way you do business.
+          Zikor brings you a <span class="highlight-animation" :class="{ typing_out: isTypingOut, typing_in: isTypingIn }">{{ displayText }}</span> technology, transforming the way you do business.
         </p>
       </div>
     <div class="button-container">
@@ -201,8 +201,8 @@ export default {
         "🌐 Anytime, Anywhere: Manage your shop and connect with buyers on-the-go.",
         "🛍️ Your Shop, Your Rules: Tailor your storefront, and let the chatbot handle the rest."
       ],
-
-      showMenu: false
+      showMenu: false,
+      displayText: "cutting-edge"
     };
   },
   mounted() {
@@ -225,7 +225,40 @@ export default {
       this.showMenu = !this.showMenu;
     },
     typeText() {
-      // Animation logic
+      const fullText = "cutting-edge";
+      let currentText = this.displayText;
+      let isTypingOut = true;
+      let charIndex = currentText.length;
+
+      const typeNextChar = () => {
+        if (isTypingOut) {
+          if (charIndex > 0) {
+            currentText = fullText.substring(0, charIndex - 1);
+            charIndex--;
+            this.isTypingOut = true;
+            this.isTypingIn = false;
+          } else {
+            isTypingOut = false;
+            this.isTypingOut = false;
+            this.isTypingIn = true;
+          }
+        } else {
+          if (charIndex < fullText.length) {
+            currentText = fullText.substring(0, charIndex + 1);
+            charIndex++;
+            this.isTypingOut = false;
+            this.isTypingIn = true;
+          } else {
+            clearInterval(typingInterval);
+            setTimeout(() => this.typeText(), 2000); 
+            return;
+          }
+        }
+
+        this.displayText = currentText;
+      };
+
+      const typingInterval = setInterval(typeNextChar, 100); 
     },
     showNextAdvantage() {
       if (!this.advantages || this.advantages.length === 0) {
@@ -249,10 +282,6 @@ export default {
   }
 };
 </script>
-
-
-
-
 
   
 <style scoped>
@@ -299,7 +328,7 @@ export default {
 .typing_out,
 .typing_in {
   
-  animation: typing 0.30s ease-in-out forwards;
+  animation: typing 0.80s ease-in-out forwards;
 }
 
 .button-container {
@@ -411,11 +440,13 @@ export default {
   display: inline-block;
   list-style-type: none;
   padding-left: 0;
+  border-radius: 0;
 }
 
 .advantage li {
   opacity: 0;
-  transition: opacity 0.5s ease-in-out;
+  transition: opacity 0.9s ease-in-out;
+  
 }
 
 .advantage li.show {

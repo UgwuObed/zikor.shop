@@ -97,7 +97,7 @@ export default {
       image: null,
       description: '',
       errorMessage: '',
-      loading: false, // New loading property
+      loading: false, 
     };
   },
 
@@ -152,7 +152,7 @@ export default {
           return;
         }
 
-        this.loading = true; // Set loading to true before starting the API call
+        this.loading = true; 
 
         const formData = new FormData();
         formData.append('name', this.name);
@@ -174,7 +174,7 @@ export default {
           console.error('Error uploading product:', error);
           this.errorMessage = 'Failed to upload product. Please try again later.';
         } finally {
-          this.loading = false; // Reset loading to false after the API call is complete
+          this.loading = false;
         }
       } else {
         console.error('Access token not found in localStorage.');

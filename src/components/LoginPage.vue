@@ -66,54 +66,44 @@ export default {
     },
 
     submitLogin() {
-      this.isLoading = true;
+  this.isLoading = true;
 
-      if (this.validateLogin()) {
-        const formData = {
-          email: this.email,
-          password: this.password,
-        };
+  if (this.validateLogin()) {
+    const formData = {
+      email: this.email,
+      password: this.password,
+    };
 
-        axios.post(`${BASE_URL}/api/login`, formData)
-          .then(response => {
+    axios.post(`${BASE_URL}/api/login`, formData)
+      .then(response => {
+        this.handleLoginSuccess(response.data);
+        this.isLoading = false;
+      })
+      .catch(error => {
+        console.error('Login failed:', error);
 
-            this.handleLoginSuccess(response.data);
-
-            this.isLoading = false;
-          })
-          .catch(error => {
-            console.error('Login failed:', error);
-
-            if (error.response && error.response.status === 401) {
-              this.errorMessage = 'Invalid email or password. Please try again.';
-            } else {
-              this.errorMessage = 'An error occurred while processing your request. Please try again later.';
-            }
-
-            this.isLoading = false;
-          });
-      } else {
-        this.errorMessage = 'Please fill in all fields.'; 
-      }
-    },
-
-    handleLoginSuccess(data) {
-
-      const redirectUrl = data.redirect;
-      if (redirectUrl) {
-        if (this.routeExists(redirectUrl)) {
-          localStorage.setItem('accessToken', data.token);
-          localStorage.setItem('isAuthenticated', true);
-
-          this.$router.push(redirectUrl);
+        if (error.response && error.response.status === 401) {
+          this.errorMessage = 'Invalid email or password. Please try again.';
         } else {
-          console.error('Redirect URL does not exist on the frontend:', redirectUrl);
+          this.errorMessage = 'An error occurred while processing your request. Please try again later.';
         }
-      } else {
-        console.error('Redirect URL not found in response.');
-      }
-    },
 
+        this.isLoading = false;
+      });
+  } else {
+    this.errorMessage = 'Please fill in all fields.';
+    this.isLoading = false;
+  }
+},
+
+handleLoginSuccess(data) {
+  // Store the token in localStorage
+  localStorage.setItem('accessToken', data.token);
+  localStorage.setItem('isAuthenticated', true);
+
+  // Navigate to the account page directly
+  this.$router.push('/home');
+},
     checkEmail() {
       this.emailTouched = true;
     },
