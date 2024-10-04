@@ -1,1 +1,1 @@
-export const BASE_URL = 'http://127.0.0.1:8000';
+export const BASE_URL = 'https://zikorshop-7a2767e5f8c8.herokuapp.com';
