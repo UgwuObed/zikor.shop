@@ -8,7 +8,6 @@ import Container from "../components/Container";
 import Section from "../components/Section";
 import Stats from "../components/Stats";
 import CTA from "../components/CTA";
-import { ImOpt } from "react-icons/im";
 import "./globals.css"
 
 const HomePage: React.FC = () => {
