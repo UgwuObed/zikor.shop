@@ -22,12 +22,28 @@ const Header: React.FC = () => {
             <Container className="!px-0">
                 <nav className="shadow-md md:shadow-none bg-white md:bg-transparent mx-auto flex justify-between items-center py-2 px-5 md:py-10">
                     {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2">
-                        <FaFingerprint className="text-foreground min-w-fit w-7 h-7" />
-                        <span className="manrope text-xl font-semibold text-foreground cursor-pointer">
+                    <Link href="/" className="flex items-center gap-3">
+                        <svg 
+                            version="1.0" 
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="60"  
+                            height="60" 
+                            viewBox="0 0 500 500"
+                            preserveAspectRatio="xMidYMid meet"
+                            className="text-[#8000bb]"
+                        >
+                            <g 
+                            transform="translate(0,500) scale(0.1,-0.1)"
+                            fill="currentColor"
+                            stroke="none"
+                            >
+                            <path d="M2325 3765 c-444 -71 -840 -356 -1043 -752 -123 -240 -169 -450 -159 -720 11 -279 89 -517 243 -745 264 -390 711 -628 1179 -628 406 0 821 187 1077 485 361 422 455 984 248 1491 -191 468 -615 796 -1127 873 -94 14 -317 12 -418 -4z m773 -716 c82 -40 121 -137 88 -222 -13 -34 -81 -103 -360 -367 -189 -179 -343 -329 -342 -333 1 -5 190 -89 421 -188 455 -195 472 -205 495 -288 20 -77 -26 -178 -96 -207 -74 -31 -86 -27 -667 223 -303 131 -565 247 -581 258 -36 23 -76 97 -76 138 0 76 30 112 316 382 l275 260 -389 5 -389 5 -42 28 c-93 62 -108 202 -30 274 60 55 34 53 708 53 616 0 625 0 669 -21z"/>
+                            </g>
+                        </svg>
+                        {/* <span className="manrope text-xl font-semibold text-[#8000bb] cursor-pointer">
                             {siteDetails.siteName}
-                        </span>
-                    </Link>
+                        </span> */}
+                        </Link>
 
                     {/* Desktop Menu */}
                     <ul className="hidden md:flex space-x-6">
@@ -39,8 +55,10 @@ const Header: React.FC = () => {
                             </li>
                         ))}
                         <li>
-                            <Link href="#cta" className="text-black bg-primary hover:bg-primary-accent px-8 py-3 rounded-full transition-colors">
-                                Download
+                        <Link 
+                                href="#cta" 
+                                className="text-white bg-[#8000bb] hover:bg-[#6a0094] px-8 py-3 rounded-full transition-colors">
+                                Register
                             </Link>
                         </li>
                     </ul>

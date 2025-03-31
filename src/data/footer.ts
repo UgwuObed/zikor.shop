@@ -22,8 +22,8 @@ export const footerDetails: {
             url: "#testimonials"
         }
     ],
-    email: 'address@yoursite.com',
-    telephone: '+1 (123) 456-7890',
+    email: 'support@zikor.shop',
+    telephone: '+234 810 800 0000',
     socials: {
         // github: 'https://github.com',
         // x: 'https://twitter.com/x',

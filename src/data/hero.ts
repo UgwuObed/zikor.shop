@@ -1,5 +1,5 @@
 export const heroDetails = {
-    heading: 'Smart, Secure, Simple Financial Management',
-    subheading: 'From effortless budgeting to real-time investment insights, Finwise puts you in control of your money like never before',
-    centerImageSrc: '/images/hero-mockup.webp',
+    heading: 'Powering Your Business, Effortlessly',
+    subheading: 'From seamless online store creation to real-time inventory, payments, and customer management – Zikor empowers you to sell smarter and grow faster.',
+    centerImageSrc: '/images/mockup.png',
 }
