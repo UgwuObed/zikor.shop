@@ -1,7 +1,7 @@
 import clsx from "clsx";
 import { BsFillCheckCircleFill } from "react-icons/bs";
 
-import { IPricing } from "@/types";
+import { IPricing } from "../../types";
 
 interface Props {
     tier: IPricing;

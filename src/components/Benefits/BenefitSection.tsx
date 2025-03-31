@@ -5,7 +5,7 @@ import { motion, Variants } from "framer-motion"
 
 import BenefitBullet from "./BenefitBullet";
 import SectionTitle from "../SectionTitle";
-import { IBenefit } from "@/types";
+import { IBenefit } from "../../types";
 
 interface Props {
     benefit: IBenefit;

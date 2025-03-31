@@ -1,4 +1,4 @@
-import { ctaDetails } from "@/data/cta"
+import { ctaDetails } from "../data/cta"
 
 import AppStoreButton from "./AppStoreButton"
 import PlayStoreButton from "./PlayStoreButton"

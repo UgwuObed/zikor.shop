@@ -1,7 +1,7 @@
 import React from 'react'
 import clsx from 'clsx'
 
-import { ctaDetails } from '@/data/cta'
+import { ctaDetails } from '../data/cta'
 
 const PlayStoreButton = ({ dark }: { dark?: boolean }) => {
     return (

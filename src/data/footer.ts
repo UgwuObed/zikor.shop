@@ -1,4 +1,4 @@
-import { IMenuItem, ISocials } from "@/types";
+import { IMenuItem, ISocials } from "../types";
 
 export const footerDetails: {
     subheading: string;
