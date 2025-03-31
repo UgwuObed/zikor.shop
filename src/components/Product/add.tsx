@@ -119,12 +119,12 @@ const AddProduct = () => {
     if (image) formDataObj.append('image', image);
 
     try {
-      const response = await axios.post('/api/products', formDataObj, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+    //   const response = await axios.post('/api/products', formDataObj, {
+    //     headers: {
+    //       'Authorization': `Bearer ${accessToken}`,
+    //       'Content-Type': 'multipart/form-data'
+    //     }
+    //   });
       
       router.push('/products/upload-success');
     } catch (error) {
