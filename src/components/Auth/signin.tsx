@@ -6,7 +6,9 @@ import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { BiEnvelope, BiLock, BiStore, BiChevronRight, BiShow, BiHide } from "react-icons/bi";
 import { motion } from "framer-motion";
-import Image from "next/image";
+import apiClient from '../../apiClient';
+
+
 
 const Signin = () => {
   const [formData, setFormData] = useState({
@@ -39,11 +41,26 @@ const Signin = () => {
     setErrorMessage("");
 
     try {
-      const response = await axios.post("/api/login", formData);
-      localStorage.setItem("accessToken", response.data.token);
+      const response = apiClient.post("/login", formData);
+      localStorage.setItem("accessToken", (await response).data.token);
       router.push("/dashboard");
     } catch (error: any) {
-      setErrorMessage(error.response?.data?.message || "Invalid email or password");
+    
+      const errorMessage = error.response?.data?.message || 
+                           error.response?.data?.error || 
+                           error.message || 
+                           "An error occurred during registration";
+      
+      
+      if (error.response?.data?.errors) {
+        const errorMessages = Object.values(error.response.data.errors)
+                                  .flat()
+                                  .join('\n');
+        setErrorMessage(errorMessages);
+      } else {
+        setErrorMessage(errorMessage);
+      }
+      
       setTimeout(() => setErrorMessage(""), 5000);
     } finally {
       setIsLoading(false);
@@ -110,13 +127,11 @@ const Signin = () => {
               </p>
               
               <div className="relative h-64">
-                <Image
-                  src="/images/ecommerce-illustration.png" 
-                  alt="Login illustration"
-                  layout="fill"
-                  objectFit="contain"
-                  className="transform hover:scale-105 transition-transform duration-500"
-                />
+              <img 
+                src="/images/ecommerce-illustration.png" 
+                alt="Ecommerce Illustration"
+                className="w-full h-auto object-contain hover:scale-105 transition-transform duration-500"
+              />
               </div>
               
               <div className="mt-8 flex items-center space-x-4">

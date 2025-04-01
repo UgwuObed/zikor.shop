@@ -15,6 +15,6 @@ export const menuItems: IMenuItem[] = [
     },
     {
         text: "Login",
-        url: "#login"
+        url: "/auth/signin"
     }
 ];
