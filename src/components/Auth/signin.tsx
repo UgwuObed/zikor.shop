@@ -1,7 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 import { useState } from "react";
 import { useRouter } from "next/router";
-import axios from "axios";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { BiEnvelope, BiLock, BiStore, BiChevronRight, BiShow, BiHide } from "react-icons/bi";
@@ -67,7 +66,7 @@ const Signin = () => {
     }
   };
 
-  // Animation variants
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {

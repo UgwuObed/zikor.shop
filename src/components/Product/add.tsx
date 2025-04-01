@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, /*useEffect*/ } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BiArrowToLeft, BiChevronRight, BiImageAdd, BiTrash, BiUpload, BiX, BiLogOut } from 'react-icons/bi';
+import { BiArrowToLeft, BiChevronRight, BiImageAdd,  BiUpload, BiX, BiLogOut } from 'react-icons/bi';
 
 interface ProductImage {
   file: File;
@@ -162,12 +162,12 @@ const AddProduct = () => {
     });
 
     try {
-      const response = await axios.post('/api/products', formDataObj, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
+      // const response = await axios.post('/api/products', formDataObj, {
+      //   headers: {
+      //     'Authorization': `Bearer ${accessToken}`,
+      //     'Content-Type': 'multipart/form-data'
+      //   }
+      // });
       
       router.push('/products/upload-success');
     } catch (error) {
