@@ -1,6 +1,5 @@
 import { useState, /*useEffect*/ } from 'react';
 import { useRouter } from 'next/router';
-import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BiArrowToLeft, BiChevronRight, BiImageAdd,  BiUpload, BiX, BiLogOut } from 'react-icons/bi';
 
@@ -22,10 +21,10 @@ const AddProduct = () => {
     description: '',
   });
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, /*setCategories*/] = useState<any[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [businessName, setBusinessName] = useState('Your Business');
+  const [businessName, /*setBusinessName*/] = useState('Your Business');
 
   // useEffect(() => {
   //   fetchCategories();
@@ -139,7 +138,7 @@ const AddProduct = () => {
       return;
     }
 
-    const accessToken = localStorage.getItem('accessToken');
+    // const accessToken = localStorage.getItem('accessToken');
     // if (!accessToken) {
     //   router.push('/auth/signin');
     //   return;
