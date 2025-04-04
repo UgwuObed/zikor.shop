@@ -8,10 +8,9 @@ const apiClient = axios.create({
   },
 });
 
-// Add request interceptor
+
 apiClient.interceptors.request.use(
   (config) => {
-    // You can modify requests here (e.g., add auth token)
     return config;
   },
   (error) => {
@@ -19,23 +18,26 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Add response interceptor
+
 apiClient.interceptors.response.use(
   (response) => {
     return response;
   },
   (error) => {
-    // Handle errors globally
+
     if (error.response) {
-      // The request was made and the server responded with a status code
-      console.error('API Error:', error.response.data);
+      console.error('API Error:', {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers
+      });
     } else if (error.request) {
-      // The request was made but no response was received
-      console.error('API Error: No response received');
+      console.error('API Error: No response received', error.request);
     } else {
-      // Something happened in setting up the request
       console.error('API Error:', error.message);
     }
+    
+
     return Promise.reject(error);
   }
 );

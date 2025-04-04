@@ -1,4 +1,3 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { Dialog, Transition } from "@headlessui/react";
@@ -6,11 +5,10 @@ import apiClient from '../../apiClient';
 import { Fragment } from "react";
 import { 
   BiUser, BiEnvelope, BiLock, BiStore, 
-  BiPhone, BiMap, BiCheck, BiArrowBack, 
-  BiChevronRight, BiBuilding, BiIdCard , BiShow, BiHide
+  BiPhone, BiMap, BiArrowBack, 
+  BiChevronRight, BiShow, BiHide
 } from "react-icons/bi";
 import { motion } from "framer-motion";
-
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -29,10 +27,10 @@ const Signup = () => {
     is_cac_registered: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const router = useRouter();
 
- 
   const nigerianStates = [
     "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", 
     "Benue", "Borno", "Cross River", "Delta", "Ebonyi", "Edo", 
@@ -98,25 +96,49 @@ const Signup = () => {
         ...formData,
         is_cac_registered: formData.is_cac_registered === "true"
       };
-
+  
       const response = await apiClient.post("/register", payload);
       localStorage.setItem("accessToken", response.data.token);
-      router.push("/product/add");
+      localStorage.setItem("businessName", formData.business_name);
+      
+      setShowSuccessAnimation(true);
+      
+      setTimeout(() => {
+        router.push("/store/storefront");
+      }, 2000);
+      
     } catch (error: any) {
-    
-      const errorMessage = error.response?.data?.message || 
-                           error.response?.data?.error || 
-                           error.message || 
-                           "An error occurred during registration";
-      
-      
-      if (error.response?.data?.errors) {
-        const errorMessages = Object.values(error.response.data.errors)
-                                  .flat()
-                                  .join('\n');
-        setErrorMessage(errorMessages);
+      if (error.response?.status === 422) {
+        const errorData = error.response.data;
+        
+        if (errorData.data) {
+          const errorMessages = Object.entries(errorData.data)
+            .map(([field, message]) => {
+              const fieldName = field.replace(/_/g, ' ');
+              return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}: ${message}`;
+            })
+            .join('\n');
+          
+          setErrorMessage(errorMessages);
+        } else if (errorData.errors) {
+          const errorMessages = Object.entries(errorData.errors)
+            .map(([field, messages]) => {
+              const fieldName = field.replace(/_/g, ' ');
+              const messageText = Array.isArray(messages) ? messages.join(' ') : messages;
+              return `${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}: ${messageText}`;
+            })
+            .join('\n');
+          
+          setErrorMessage(errorMessages);
+        } else {
+          setErrorMessage(errorData.message || "Please correct the validation errors");
+        }
       } else {
-        setErrorMessage(errorMessage);
+        setErrorMessage(
+          error.response?.data?.message ||
+          error.message ||
+          "An unexpected error occurred"
+        );
       }
       
       setTimeout(() => setErrorMessage(""), 5000);
@@ -150,6 +172,31 @@ const Signup = () => {
     }
   };
 
+  // Success animation variants
+  const checkmarkVariants = {
+    hidden: { pathLength: 0, opacity: 0 },
+    visible: { 
+      pathLength: 1, 
+      opacity: 1,
+      transition: { 
+        duration: 0.5,
+        ease: "easeInOut" 
+      }
+    }
+  };
+
+  const circleVariants = {
+    hidden: { scale: 0, opacity: 0 },
+    visible: { 
+      scale: 1, 
+      opacity: 1,
+      transition: { 
+        duration: 0.3,
+        ease: "easeOut" 
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-gray-50 flex items-center justify-center p-4">
       {/* Background decorative elements */}
@@ -157,6 +204,80 @@ const Signup = () => {
         <div className="absolute top-0 right-0 w-1/3 h-full bg-purple-100 opacity-10 transform rotate-12 -translate-y-1/4"></div>
         <div className="absolute bottom-0 left-0 w-1/2 h-1/2 bg-purple-200 opacity-10 transform -rotate-12 translate-y-1/4"></div>
       </div>
+
+      {/* Success Animation Modal */}
+      <Transition show={showSuccessAnimation} as={Fragment}>
+        <Dialog
+          as="div"
+          className="fixed inset-0 z-50 overflow-y-auto"
+          onClose={() => {}}
+        >
+          <div className="min-h-screen text-center flex items-center justify-center">
+            <div className="fixed inset-0 bg-black opacity-30" />
+            
+            <div className="inline-block align-middle bg-white rounded-lg text-center overflow-hidden shadow-xl transform transition-all p-8">
+              <motion.div className="flex flex-col items-center">
+                <div className="relative w-24 h-24">
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-green-100"
+                    variants={circleVariants}
+                    initial="hidden"
+                    animate="visible"
+                  />
+                  <motion.svg
+                    className="absolute inset-0"
+                    viewBox="0 0 100 100"
+                    width="100"
+                    height="100"
+                  >
+                    <motion.path
+                      d="M20,50 L40,70 L80,30"
+                      fill="transparent"
+                      strokeWidth="8"
+                      stroke="#10B981"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      variants={checkmarkVariants}
+                      initial="hidden"
+                      animate="visible"
+                    />
+                  </motion.svg>
+                </div>
+                
+                <motion.h3
+                  className="mt-6 text-xl font-bold text-gray-800"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
+                  Registration Successful!
+                </motion.h3>
+                
+                <motion.p
+                  className="mt-2 text-gray-600"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  Redirecting to create your storefront...
+                </motion.p>
+                
+                <motion.div
+                  className="mt-6 w-12 h-1 bg-gray-200 rounded-full overflow-hidden"
+                  initial={{ width: "12rem" }}
+                >
+                  <motion.div
+                    className="h-full bg-purple-600"
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 2, ease: "linear" }}
+                  />
+                </motion.div>
+              </motion.div>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
 
       {/* Main content */}
       <div className="relative w-full max-w-4xl mx-4">
@@ -239,33 +360,6 @@ const Signup = () => {
               </motion.p>
             </div>
 
-            {/* Loading overlay */}
-            <Transition show={isLoading} as={Fragment}>
-              <Dialog
-                as="div"
-                className="fixed inset-0 z-50 overflow-y-auto"
-                onClose={() => {}}
-              >
-                <div className="min-h-screen text-center">
-                  <div className="fixed inset-0 bg-black opacity-30" />
-                  <div className="inline-block align-middle bg-white rounded-lg text-center overflow-hidden shadow-xl transform transition-all p-8">
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                      className="rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent mx-auto"
-                    ></motion.div>
-                    <motion.p 
-                      className="mt-4 text-purple-800 font-medium"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      Creating your account...
-                    </motion.p>
-                  </div>
-                </div>
-              </Dialog>
-            </Transition>
-
             {/* Error message */}
             <Transition
               show={!!errorMessage}
@@ -276,13 +370,13 @@ const Signup = () => {
               leaveFrom="opacity-100"
               leaveTo="opacity-0"
             >
-              <motion.div 
-                className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg"
-                initial={{ x: -20 }}
-                animate={{ x: 0 }}
-              >
-                <p className="text-red-700 text-sm">{errorMessage}</p>
-              </motion.div>
+            <motion.div 
+              className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg"
+              initial={{ x: -20 }}
+              animate={{ x: 0 }}
+            >
+              <p className="text-red-700 text-sm whitespace-pre-line">{errorMessage}</p>
+            </motion.div>
             </Transition>
 
             {/* Step 1: Signup Form */}
@@ -419,7 +513,7 @@ const Signup = () => {
                     onClick={handleSignup}
                     className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white font-medium rounded-lg shadow-md transition-all duration-200 transform hover:scale-[1.02] flex items-center justify-center group"
                   >
-                    Continue to Business Details
+                    Continue
                     <BiChevronRight className="w-5 h-5 ml-2 transition-transform duration-200 group-hover:translate-x-1" />
                   </button>
                 </motion.div>
@@ -535,75 +629,94 @@ const Signup = () => {
                 </motion.div>
 
                 <motion.div variants={itemVariants}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Is your business registered with CAC?
-                  </label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <motion.label 
-                      className={`flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                        formData.is_cac_registered === "true" 
-                          ? "border-purple-600 bg-purple-50" 
-                          : "border-gray-300 hover:border-purple-400"
-                      }`}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <input
-                        type="radio"
-                        name="is_cac_registered"
-                        value="true"
-                        checked={formData.is_cac_registered === "true"}
-                        onChange={handleChange}
-                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 mr-2"
-                      />
-                      <div className="flex items-center">
-                        <BiIdCard className="h-5 w-5 mr-2" />
-                        <span>Yes, registered</span>
-                      </div>
-                    </motion.label>
-                    <motion.label 
-                      className={`flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                        formData.is_cac_registered === "false" 
-                          ? "border-purple-600 bg-purple-50" 
-                          : "border-gray-300 hover:border-purple-400"
-                      }`}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <input
-                        type="radio"
-                        name="is_cac_registered"
-                        value="false"
-                        checked={formData.is_cac_registered === "false"}
-                        onChange={handleChange}
-                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 mr-2"
-                      />
-                      <div className="flex items-center">
-                        <BiBuilding className="h-5 w-5 mr-2" />
-                        <span>Not yet</span>
-                      </div>
-                    </motion.label>
-                  </div>
-                </motion.div>
+        <label className="block text-sm font-small text-gray-700 mb-2">
+          Is your business registered with CAC?
+        </label>
+        <div className="grid grid-cols-2 gap-4">
+
+          <motion.label 
+            className={`flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+              formData.is_cac_registered === "true" 
+                ? "border-[#8000bb] bg-purple-50" 
+                : "border-gray-300 hover:border-purple-400"
+            }`}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <input
+              type="radio"
+              name="is_cac_registered"
+              value="true"
+              checked={formData.is_cac_registered === "true"}
+              onChange={handleChange}
+              className="hidden" 
+            />
+            <div className="flex items-center">
+              <span className={`${
+                formData.is_cac_registered === "true" ? "text-[#8000bb] font-medium" : "text-gray-700"
+              }`}>Yes</span>
+            </div>
+          </motion.label>
+
+          <motion.label 
+            className={`flex items-center justify-center p-3 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+              formData.is_cac_registered === "false" 
+                ? "border-[#8000bb] bg-purple-50" 
+                : "border-gray-300 hover:border-purple-400"
+            }`}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <input
+              type="radio"
+              name="is_cac_registered"
+              value="false"
+              checked={formData.is_cac_registered === "false"}
+              onChange={handleChange}
+              className="hidden" // Hide the default radio button
+            />
+            <div className="flex items-center">
+              <span className={`${
+                formData.is_cac_registered === "false" ? "text-[#8000bb] font-medium" : "text-gray-700"
+              }`}>Not yet</span>
+            </div>
+          </motion.label>
+        </div>
+      </motion.div>
 
                 <motion.div className="flex space-x-4 pt-2" variants={itemVariants}>
                   <motion.button
                     onClick={handleBack}
-                    className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center"
+                    className="flex-1 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-all duration-200 flex items-center justify-center disabled:opacity-70"
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
+                    disabled={isLoading}
                   >
                     <BiArrowBack className="w-5 h-5 mr-2" />
                     Back
                   </motion.button>
                   <motion.button
                     onClick={handleSubmit}
-                    className="flex-1 py-3 px-4 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white font-medium rounded-lg shadow-md transition-all duration-200 flex items-center justify-center group"
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
+                    className="flex-1 py-2 px-1 bg-gradient-to-r from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white font-medium rounded-lg shadow-md transition-all duration-200 flex items-center justify-center group disabled:opacity-70"
+                    whileHover={!isLoading ? { scale: 1.01 } : {}}
+                    whileTap={!isLoading ? { scale: 0.99 } : {}}
+                    disabled={isLoading}
                   >
-                    Complete Registration
-                    <BiCheck className="w-5 h-5 ml-2 transition-transform duration-200 group-hover:scale-125" />
+                    {isLoading ? (
+                      <>
+                        <motion.div
+                          className="h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"
+                          animate={{ rotate: 360 }}
+                          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                        />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        Sign up
+                        {/* <BiCheck className="w-5 h-5 ml-2 transition-transform duration-200 group-hover:scale-125" /> */}
+                      </>
+                    )}
                   </motion.button>
                 </motion.div>
               </motion.div>

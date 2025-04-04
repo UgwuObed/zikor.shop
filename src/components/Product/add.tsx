@@ -1,7 +1,8 @@
-import { useState, /*useEffect*/ } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BiArrowToLeft, BiChevronRight, BiImageAdd,  BiUpload, BiX, BiLogOut } from 'react-icons/bi';
+import { BiArrowToLeft, BiChevronRight, BiImageAdd, BiUpload, BiX, BiLogOut } from 'react-icons/bi';
+import apiClient from '../../apiClient';
 
 interface ProductImage {
   file: File;
@@ -21,51 +22,51 @@ const AddProduct = () => {
     description: '',
   });
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
-  const [categories, /*setCategories*/] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [businessName, /*setBusinessName*/] = useState('Your Business');
+  const [businessName, setBusinessName] = useState('Your Business');
 
-  // useEffect(() => {
-  //   fetchCategories();
-  //   fetchBusinessInfo();
-  // }, []);
+  useEffect(() => {
+    fetchCategories();
+    fetchBusinessInfo();
+  }, []);
 
-  // const fetchCategories = async () => {
-  //   const accessToken = localStorage.getItem('accessToken');
-  //   if (!accessToken) {
-  //     router.push('/auth/signin');
-  //     return;
-  //   }
+  const fetchCategories = async () => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      router.push('/auth/signin');
+      return;
+    }
 
-  //   try {
-  //     const response = await axios.get('/api/categories', {
-  //       headers: {
-  //         'Authorization': `Bearer ${accessToken}`
-  //       }
-  //     });
-  //     setCategories(response.data.categories);
-  //   } catch (error) {
-  //     console.error('Error fetching categories:', error);
-  //     setErrorMessage('Failed to fetch categories. Please try again later.');
-  //   }
-  // };
+    try {
+      const response = await apiClient.get('/categories', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      setCategories(response.data.categories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      setErrorMessage('Failed to fetch categories. Please try again later.');
+    }
+  };
 
-  // const fetchBusinessInfo = async () => {
-  //   const accessToken = localStorage.getItem('accessToken');
-  //   if (!accessToken) return;
+  const fetchBusinessInfo = async () => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) return;
 
-  //   try {
-  //     const response = await axios.get('/api/business/profile', {
-  //       headers: {
-  //         'Authorization': `Bearer ${accessToken}`
-  //       }
-  //     });
-  //     setBusinessName(response.data.business?.name || 'Your Business');
-  //   } catch (error) {
-  //     console.error('Error fetching business info:', error);
-  //   }
-  // };
+    try {
+      const response = await apiClient.get('/business/name', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      setBusinessName(response.data.business?.name || 'Your Business');
+    } catch (error) {
+      console.error('Error fetching business info:', error);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
@@ -98,7 +99,6 @@ const AddProduct = () => {
               id: Date.now() + Math.random().toString(36).substring(2, 9)
             });
             
-            // Only update state after all files are processed
             if (newImages.length === e.target.files!.length) {
               setProductImages(prev => [...prev, ...newImages]);
             }
@@ -138,46 +138,77 @@ const AddProduct = () => {
       return;
     }
 
-    // const accessToken = localStorage.getItem('accessToken');
-    // if (!accessToken) {
-    //   router.push('/auth/signin');
-    //   return;
-    // }
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      router.push('/auth/signin');
+      return;
+    }
 
     setIsLoading(true);
     setErrorMessage('');
 
+  
     const formDataObj = new FormData();
     formDataObj.append('name', formData.name);
     formDataObj.append('main_price', formData.main_price);
-    formDataObj.append('discount_price', formData.discount_price);
-    formDataObj.append('quantity', formData.quantity);
-    formDataObj.append('category_id', formData.selectedCategory);
-    formDataObj.append('description', formData.description);
     
-    // Append all images
+  
+    if (formData.discount_price) {
+      formDataObj.append('discount_price', formData.discount_price);
+    }
+    
+    formDataObj.append('quantity', formData.quantity || '0');
+    
+    formDataObj.append('category_id', formData.selectedCategory);
+    
+    if (formData.description) {
+      formDataObj.append('description', formData.description);
+    }
+
     productImages.forEach((image, index) => {
       formDataObj.append(`images[${index}]`, image.file);
     });
 
     try {
-      // const response = await axios.post('/api/products', formDataObj, {
-      //   headers: {
-      //     'Authorization': `Bearer ${accessToken}`,
-      //     'Content-Type': 'multipart/form-data'
-      //   }
-      // });
+      const response = await apiClient.post('/products', formDataObj, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       
-      router.push('/products/upload-success');
-    } catch (error) {
+      if (response.status === 201) {
+        router.push('/products/upload-success');
+      }
+    } catch (error: any) {
       console.error('Error uploading product:', error);
-      setErrorMessage('Failed to upload product. Please try again.');
+      
+      if (error.response) {
+        if (error.response.data && error.response.data.error) {
+          const validationErrors = error.response.data.error;
+          const errorMessages = [];
+
+          for (const field in validationErrors) {
+            errorMessages.push(validationErrors[field][0]);
+          }
+          
+          setErrorMessage(errorMessages.join(', '));
+        } else if (error.response.data && error.response.data.message) {
+          setErrorMessage(error.response.data.message);
+        } else {
+          setErrorMessage(`Server error: ${error.response.status}`);
+        }
+      } else if (error.request) {
+        setErrorMessage('No response from server. Please check your internet connection.');
+      } else {
+
+        setErrorMessage('Failed to upload product. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -204,7 +235,7 @@ const AddProduct = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-80 to-gray-20 py-8 px-4">
       {/* Header with Business Name and Logout */}
       <div className="max-w-6xl mx-auto mb-6">
         <div className="flex justify-between items-center">
