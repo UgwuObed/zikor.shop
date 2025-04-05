@@ -10,18 +10,7 @@ import SettingsStep from '../Storefront/settings';
 import PreviewStep from '../Storefront/preview';
 import { CheckCircle, AlertTriangle } from "lucide-react";
 
-interface SocialLinks {
-  facebook: string;
-  instagram: string;
-  twitter: string;
-  website: string;
-}
 
-interface BusinessHoursDay {
-  open: string;
-  close: string;
-  closed: boolean;
-}
 
 interface FormData {
   business_name: string;
@@ -35,16 +24,26 @@ interface FormData {
   description: string;
   email: string;
   phone: string;
-  social_links: SocialLinks;
   color_theme: string;
-  business_hours: Record<string, BusinessHoursDay>;
   address: string;
-  bankDetails: {
-    bank_name: '',
-    account_name: '',
-    account_number: ''
-  },
+  business_hours: Record<string, {
+    open: string;
+    close: string;
+    closed: boolean;
+  }>;
+  bank_details: {
+    bank_name: string;
+    account_name: string;
+    account_number: string;
+  };
+  social_links: {
+    facebook: string;
+    instagram: string;
+    twitter: string;
+    website: string;
+  };
 }
+
 
 const steps = ['Basic Info', 'Appearance', 'Contact', 'Settings', 'Preview'];
 
@@ -77,22 +76,29 @@ const StorefrontSetup = () => {
       website: ''
     },
     color_theme: 'default',
-    business_hours: {},
     address: '',
-    bankDetails: {
+    business_hours: {
+      Monday: { open: '09:00', close: '17:00', closed: false },
+      Tuesday: { open: '09:00', close: '17:00', closed: false },
+      Wednesday: { open: '09:00', close: '17:00', closed: false },
+      Thursday: { open: '09:00', close: '17:00', closed: false },
+      Friday: { open: '09:00', close: '17:00', closed: false },
+      Saturday: { open: '', close: '', closed: true },
+      Sunday: { open: '', close: '', closed: true }
+    },
+    bank_details: {
       bank_name: '',
       account_name: '',
       account_number: ''
-    },
+    }
   });
 
-  // Progress bar animation
+ 
   const progressProps = useSpring({
     width: `${(currentStep-1) * 25}%`,
     config: { tension: 120, friction: 14 }
   });
 
-  // Alert animations
   const alertAnimation = useSpring({
     opacity: error || success ? 1 : 0,
     transform: error || success ? 'translateY(0)' : 'translateY(-20px)',
@@ -103,25 +109,34 @@ const StorefrontSetup = () => {
     | React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
     | { target: { name: string; value: any } };
 
-  const handleChange = (e: FormChangeEvent) => {
-    const { name, value } = e.target;
-    
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...(prev[parent as keyof typeof prev] as object),
-          [child]: value
-        }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
-  };
+    const handleChange = (e: FormChangeEvent) => {
+      const { name, value } = e.target;
+      
+      if (name.startsWith('social_links.')) {
+        const [_, field] = name.split('.');
+        setFormData(prev => ({
+          ...prev,
+          social_links: {
+            ...prev.social_links,
+            [field]: value
+          }
+        }));
+      } else if (name.startsWith('bank_details.')) {
+        const [_, field] = name.split('.');
+        setFormData(prev => ({
+          ...prev,
+          bank_details: {
+            ...prev.bank_details,
+            [field]: value
+          }
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: value
+        }));
+      }
+    };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, files } = e.target;
@@ -181,41 +196,70 @@ const StorefrontSetup = () => {
         router.push('/login');
         return;
       }
-      
-      const submissionData = new FormData();
-      
-      Object.entries(formData).forEach(([key, value]) => {
-        if (key === 'social_links' || key === 'business_hours' || key === 'bank_details') {
-          submissionData.append(key, JSON.stringify(value));
-        } else if (key !== 'logo' && key !== 'banner' && key !== 'logoPreview' && key !== 'bannerPreview' && value !== null) {
-          submissionData.append(key, String(value));
-        }
+  
+      const checkResponse = await apiClient.get('/storefront', {
+        headers: { 'Authorization': `Bearer ${accessToken}` }
       });
       
-    
+      const hasStorefront = checkResponse.data.has_storefront;
+      setHasExistingStorefront(hasStorefront);
+  
+      const formDataObj = new FormData();
+      formDataObj.append('business_name', formData.business_name);
+      formDataObj.append('slug', formData.slug);
+      formDataObj.append('category', formData.category);
+      formDataObj.append('tagline', formData.tagline);
+      formDataObj.append('description', formData.description);
+      formDataObj.append('email', formData.email);
+      formDataObj.append('phone', formData.phone);
+      
+      formDataObj.append('social_links', JSON.stringify(formData.social_links));
+      formDataObj.append('bank_details', JSON.stringify(formData.bank_details));
+      formDataObj.append('business_hours', JSON.stringify(formData.business_hours));
+      
+      formDataObj.append('color_theme', formData.color_theme);
+      formDataObj.append('address', formData.address);
+      
       if (formData.logo instanceof File) {
-        submissionData.append('logo', formData.logo);
-      }
-      if (formData.banner instanceof File) {
-        submissionData.append('banner', formData.banner);
+        formDataObj.append('logo', formData.logo);
       }
       
+      if (formData.banner instanceof File) {
+        formDataObj.append('banner', formData.banner);
+      }
+  
       const config = {
         headers: { 
           'Authorization': `Bearer ${accessToken}`,
           'Content-Type': 'multipart/form-data'
         }
       };
-      
+  
       const endpoint = '/storefront';
-      // const method = hasExistingStorefront ? 'put' : 'post';
-      
-      // await apiClient[method](endpoint, submissionData, config);
-      
-      setSuccess(true);
-      setTimeout(() => router.push('/dashboard'), 3000);
+      let response;
+  
+      if (hasStorefront) {
+        response = await apiClient.put(endpoint, formDataObj, config);
+      } else {
+        response = await apiClient.post(endpoint, formDataObj, config);
+      }
+  
+      if (response.data?.success === true) {
+        console.log('Operation successful, triggering confetti');
+        setSuccess(true);
+        setTimeout(() => router.push('/product/add'), 3000);
+      } else {
+        throw new Error(`Unexpected response status: ${response.status}`);
+      }
     } catch (err: any) {
       console.error('Error saving storefront:', err);
+      
+      if (err.response) {
+        console.error('Response data:', err.response.data);
+        console.error('Response status:', err.response.status);
+        console.error('Response headers:', err.response.headers);
+      }
+      
       let errorMessage = 'An error occurred while saving your storefront';
       
       if (err.response) {
@@ -225,9 +269,13 @@ const StorefrontSetup = () => {
             .join('\n');
         } else if (err.response.data?.message) {
           errorMessage = err.response.data.message;
+        } else {
+          errorMessage = `Server error: ${err.response.status}`;
         }
-      } else if (err.message) {
-        errorMessage = err.message;
+      } else if (err.request) {
+        errorMessage = 'No response from server. Please check your internet connection.';
+      } else {
+        errorMessage = err.message || 'Failed to save storefront. Please try again.';
       }
       
       setError(errorMessage);
@@ -334,7 +382,7 @@ const StorefrontSetup = () => {
         const duration = 2000;
         const end = Date.now() + duration;
 
-        const colors = ['#1E40AF', '#3B82F6', '#93C5FD'];
+        const colors = ['#1E40AF', '#8000bb', '#93C5FD'];
 
         (function frame() {
           confetti.default({
@@ -366,71 +414,88 @@ const StorefrontSetup = () => {
       <h1 className="text-2xl font-bold mb-6 text-center bg-gradient-to-r from-[#8000bb] to-[#8000bb] text-transparent bg-clip-text">
         {hasExistingStorefront ? 'Update Your Storefront' : 'Create Your Storefront'}
       </h1>
+        
+      <AnimatePresence>
+  {/* Error Modal */}
+  {error && (
+    <motion.div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden"
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        transition={{ type: 'spring', damping: 20 }}
+      >
+        <div className="bg-red-500 p-4 flex items-center">
+          <AlertTriangle className="h-6 w-6 text-white mr-2" />
+          <h3 className="text-lg font-medium text-white">Error</h3>
+        </div>
+        <div className="p-6">
+          <p className="text-gray-700">{error}</p>
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={() => setError(null)}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
 
-        
-        {/* <div className="mb-8">
-          <div className="flex justify-between mb-2">
-            {steps.map((step, index) => (
-              <motion.div 
-                key={index}
-                className={`text-sm text-center w-1/5 relative ${
-                  currentStep > index + 1 ? 'text-green-600 font-medium' : 
-                  currentStep === index + 1 ? 'text-blue-600 font-bold' : 
-                  'text-gray-400'
-                }`}
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-              >
-                <span className="relative z-10">{step}</span>
-                {currentStep === index + 1 && (
-                  <motion.div 
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
-                    layoutId="stepUnderline"
-                  />
-                )}
-              </motion.div>
-            ))}
+  {/* Success Modal */}
+  {success && (
+    <motion.div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden"
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        transition={{ type: 'spring', damping: 20 }}
+      >
+        <div className="bg-green-500 p-4 flex items-center">
+          <CheckCircle className="h-6 w-6 text-white mr-2" />
+          <h3 className="text-lg font-medium text-white">Success!</h3>
+        </div>
+        <div className="p-6">
+          <p className="text-gray-700">
+            Your storefront has been {hasExistingStorefront ? 'updated' : 'created'} successfully!
+          </p>
+          <div className="mt-4 flex items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="text-gray-600">Redirecting in 3 seconds...</span>
           </div>
-          <div className="relative pt-1">
-            <div className="overflow-hidden h-2 text-xs flex rounded-full bg-gray-200">
-              <animated.div 
-                ref={progressBarRef}
-                style={progressProps}
-                className="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full"
-              ></animated.div>
-            </div>
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={() => {
+                setSuccess(false);
+                router.push('/product/add');
+              }}
+              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+            >
+              Go Now
+            </button>
           </div>
-        </div> */}
-        
-        <AnimatePresence>
-          {(error || success) && (
-            <animated.div style={alertAnimation}>
-              {error && (
-                <motion.div 
-                  className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded mb-6 flex items-start"
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                >
-                  <AlertTriangle className="h-5 w-5 mr-2 flex-shrink-0 text-red-500" />
-                  <p>{error}</p>
-                </motion.div>
-              )}
-              
-              {success && (
-                <motion.div 
-                  className="bg-green-50 border-l-4 border-green-500 text-green-700 p-4 rounded mb-6 flex items-start"
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                >
-                  <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0 text-green-500" />
-                  <p>Your storefront has been {hasExistingStorefront ? 'updated' : 'created'} successfully! Redirecting to dashboard...</p>
-                </motion.div>
-              )}
-            </animated.div>
-          )}
-        </AnimatePresence>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
         
         {renderStep()}
     </div>

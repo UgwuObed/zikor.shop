@@ -1,91 +1,118 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const EnhancedBusinessHours = ({ 
-  businessHours, 
-  onChange 
-}: {
-  businessHours: {
-    [key: string]: {
-      open: string;
-      close: string;
-      closed: boolean;
-    }
-  };
-  onChange: (hours: {
-    [key: string]: {
-      open: string;
-      close: string; 
-      closed: boolean;
-    }
-  }) => void;
-}) => {
-  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-  const [activeDay, setActiveDay] = useState<string | null>(null);
-  const [showHours, setShowHours] = useState(true);
-  
+interface BusinessDay {
+  open: string;
+  close: string;
+  closed: boolean;
+}
 
-  const presetSchedules = [
-    { name: "Weekdays 9-5", schedule: {
-      Monday: { open: "09:00", close: "17:00", closed: false },
-      Tuesday: { open: "09:00", close: "17:00", closed: false },
-      Wednesday: { open: "09:00", close: "17:00", closed: false },
-      Thursday: { open: "09:00", close: "17:00", closed: false },
-      Friday: { open: "09:00", close: "17:00", closed: false },
-      Saturday: { open: "", close: "", closed: true },
-      Sunday: { open: "", close: "", closed: true },
-    }},
-    { name: "All week", schedule: {
-      Monday: { open: "09:00", close: "18:00", closed: false },
-      Tuesday: { open: "09:00", close: "18:00", closed: false },
-      Wednesday: { open: "09:00", close: "18:00", closed: false },
-      Thursday: { open: "09:00", close: "18:00", closed: false },
-      Friday: { open: "09:00", close: "18:00", closed: false },
-      Saturday: { open: "10:00", close: "16:00", closed: false },
-      Sunday: { open: "10:00", close: "16:00", closed: false },
-    }},
-    { name: "Weekdays + Saturday AM", schedule: {
-      Monday: { open: "09:00", close: "17:00", closed: false },
-      Tuesday: { open: "09:00", close: "17:00", closed: false },
-      Wednesday: { open: "09:00", close: "17:00", closed: false },
-      Thursday: { open: "09:00", close: "17:00", closed: false },
-      Friday: { open: "09:00", close: "17:00", closed: false },
-      Saturday: { open: "09:00", close: "13:00", closed: false },
-      Sunday: { open: "", close: "", closed: true },
-    }}
+interface BusinessHours {
+  [key: string]: BusinessDay;
+}
+
+interface PresetSchedule {
+  name: string;
+  schedule: BusinessHours;
+}
+
+interface EnhancedBusinessHoursProps {
+  businessHours?: BusinessHours;
+  onChange: (hours: BusinessHours) => void;
+}
+
+const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const;
+type DayOfWeek = typeof daysOfWeek[number];
+
+const EnhancedBusinessHours: React.FC<EnhancedBusinessHoursProps> = ({ 
+  businessHours = {}, 
+  onChange 
+}) => {
+  const [activeDay, setActiveDay] = useState<DayOfWeek | null>(null);
+  const [showHours, setShowHours] = useState(true);
+
+  // Ensure all days are present with proper structure
+  const completeBusinessHours = useMemo(() => {
+    const complete: BusinessHours = { ...businessHours };
+    
+    daysOfWeek.forEach(day => {
+      if (!complete[day] || typeof complete[day] !== 'object') {
+        complete[day] = { open: '', close: '', closed: false };
+      }
+    });
+    
+    return complete;
+  }, [businessHours]);
+
+  const presetSchedules: PresetSchedule[] = [
+    { 
+      name: "Weekdays 9-5", 
+      schedule: {
+        Monday: { open: "09:00", close: "17:00", closed: false },
+        Tuesday: { open: "09:00", close: "17:00", closed: false },
+        Wednesday: { open: "09:00", close: "17:00", closed: false },
+        Thursday: { open: "09:00", close: "17:00", closed: false },
+        Friday: { open: "09:00", close: "17:00", closed: false },
+        Saturday: { open: "", close: "", closed: true },
+        Sunday: { open: "", close: "", closed: true },
+      }
+    },
+    { 
+      name: "All week", 
+      schedule: {
+        Monday: { open: "09:00", close: "18:00", closed: false },
+        Tuesday: { open: "09:00", close: "18:00", closed: false },
+        Wednesday: { open: "09:00", close: "18:00", closed: false },
+        Thursday: { open: "09:00", close: "18:00", closed: false },
+        Friday: { open: "09:00", close: "18:00", closed: false },
+        Saturday: { open: "10:00", close: "16:00", closed: false },
+        Sunday: { open: "10:00", close: "16:00", closed: false },
+      }
+    },
+    { 
+      name: "Weekdays + Saturday AM", 
+      schedule: {
+        Monday: { open: "09:00", close: "17:00", closed: false },
+        Tuesday: { open: "09:00", close: "17:00", closed: false },
+        Wednesday: { open: "09:00", close: "17:00", closed: false },
+        Thursday: { open: "09:00", close: "17:00", closed: false },
+        Friday: { open: "09:00", close: "17:00", closed: false },
+        Saturday: { open: "09:00", close: "13:00", closed: false },
+        Sunday: { open: "", close: "", closed: true },
+      }
+    }
   ];
   
-  const applyPreset = (preset: { name?: string; schedule: any; }) => {
+  const applyPreset = (preset: PresetSchedule) => {
     onChange(preset.schedule);
   };
   
-  const handleDayClick = (day: React.SetStateAction<string | null>) => {
+  const handleDayClick = (day: DayOfWeek) => {
     setActiveDay(activeDay === day ? null : day);
   };
   
-  const handleHoursChange = (day: string, field: string, value: string | boolean) => {
-    const updatedHours = { ...businessHours };
-    
-    if (!updatedHours[day]) {
-      updatedHours[day] = { open: '', close: '', closed: false };
-    }
+  const handleHoursChange = (day: DayOfWeek, field: keyof BusinessDay, value: string | boolean) => {
+    const updatedHours = { ...completeBusinessHours };
     
     if (field === 'open' || field === 'close') {
+      // Validate time format (HH:MM)
+      if (typeof value === 'string' && !/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(value)) {
+        return;
+      }
       updatedHours[day][field] = value as string;
     } else if (field === 'closed') {
       updatedHours[day].closed = value as boolean;
-    }
-    
-    if (field === 'closed' && value === true) {
-      updatedHours[day].open = '';
-      updatedHours[day].close = '';
+      if (value === true) {
+        updatedHours[day].open = '';
+        updatedHours[day].close = '';
+      }
     }
     
     onChange(updatedHours);
   };
   
-  const getReadableHours = (day: string) => {
-    const dayData = businessHours[day];
+  const getReadableHours = (day: DayOfWeek) => {
+    const dayData = completeBusinessHours[day];
     if (!dayData || dayData.closed) return "Closed";
     
     const formatTime = (time: string) => {
@@ -98,11 +125,11 @@ const EnhancedBusinessHours = ({
     return `${formatTime(dayData.open)} - ${formatTime(dayData.close)}`;
   };
   
-  const copyHours = (fromDay: string) => {
-    const fromHours = businessHours[fromDay];
+  const copyHours = (fromDay: DayOfWeek) => {
+    const fromHours = completeBusinessHours[fromDay];
     if (!fromHours) return;
     
-    const updatedHours = { ...businessHours };
+    const updatedHours = { ...completeBusinessHours };
     daysOfWeek.forEach(day => {
       if (day !== fromDay) {
         updatedHours[day] = { ...fromHours };
@@ -149,9 +176,9 @@ const EnhancedBusinessHours = ({
               <div className="mb-6">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">Quick Templates</h4>
                 <div className="flex flex-wrap gap-2">
-                  {presetSchedules.map((preset, index) => (
+                  {presetSchedules.map((preset) => (
                     <button
-                      key={index}
+                      key={preset.name}
                       onClick={() => applyPreset(preset)}
                       className="px-3 py-1 text-sm bg-purple-50 text-purple-700 rounded-full hover:bg-purple-100 transition-colors"
                     >
@@ -163,8 +190,8 @@ const EnhancedBusinessHours = ({
               
               {/* Days of Week Selection */}
               <div className="grid grid-cols-7 gap-1 mb-6">
-                {daysOfWeek.map((day, index) => {
-                  const dayData = businessHours[day] || { closed: false };
+                {daysOfWeek.map((day) => {
+                  const dayData = completeBusinessHours[day];
                   const isActive = activeDay === day;
                   const isClosed = dayData.closed;
                   
@@ -225,7 +252,7 @@ const EnhancedBusinessHours = ({
                         <input
                           type="checkbox"
                           id={`closed-${activeDay}`}
-                          checked={businessHours[activeDay]?.closed || false}
+                          checked={completeBusinessHours[activeDay].closed}
                           onChange={(e) => handleHoursChange(activeDay, 'closed', e.target.checked)}
                           className="h-4 w-4 text-purple-700 focus:ring-purple-500 border-gray-300 rounded"
                         />
@@ -234,7 +261,7 @@ const EnhancedBusinessHours = ({
                         </label>
                       </div>
                       
-                      {!(businessHours[activeDay]?.closed) && (
+                      {!completeBusinessHours[activeDay].closed && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label htmlFor={`open-${activeDay}`} className="block text-xs font-medium text-gray-700 mb-1">
@@ -243,7 +270,7 @@ const EnhancedBusinessHours = ({
                             <input
                               type="time"
                               id={`open-${activeDay}`}
-                              value={businessHours[activeDay]?.open || ''}
+                              value={completeBusinessHours[activeDay].open}
                               onChange={(e) => handleHoursChange(activeDay, 'open', e.target.value)}
                               className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
                             />
@@ -256,7 +283,7 @@ const EnhancedBusinessHours = ({
                             <input
                               type="time"
                               id={`close-${activeDay}`}
-                              value={businessHours[activeDay]?.close || ''}
+                              value={completeBusinessHours[activeDay].close}
                               onChange={(e) => handleHoursChange(activeDay, 'close', e.target.value)}
                               className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
                             />
@@ -275,7 +302,7 @@ const EnhancedBusinessHours = ({
                 </div>
                 <div className="divide-y divide-gray-100">
                   {daysOfWeek.map(day => {
-                    const dayData = businessHours[day] || { closed: false };
+                    const dayData = completeBusinessHours[day];
                     return (
                       <div key={day} className="flex justify-between px-4 py-3">
                         <span className="text-sm font-medium text-gray-700">{day}</span>

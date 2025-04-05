@@ -21,7 +21,7 @@ type FormChangeEvent =
 interface SettingsStepProps {
   formData: {
     business_hours: Record<string, BusinessHoursDay>;
-    bankDetails: BankDetails;
+    bank_details: BankDetails;
     [key: string]: any;
   };
   handleChange: (e: FormChangeEvent) => void;
@@ -85,18 +85,12 @@ const SettingsStep: React.FC<SettingsStepProps> = ({
   };
   
   const handleBankDetailsChange = (field: keyof BankDetails, value: string) => {
-    const updatedBankDetails = { 
-      ...formData.bankDetails || { bankName: '', accountName: '', accountNumber: '' }
-    };
-    
-    updatedBankDetails[field] = value;
-    
     handleChange({
       target: {
-        name: 'bankDetails',
-        value: updatedBankDetails
+        name: `bank_details.${field}`,
+        value
       }
-    });
+    } as FormChangeEvent);
   };
 
 
@@ -193,7 +187,7 @@ const SettingsStep: React.FC<SettingsStepProps> = ({
             </label>
             <select
               id="bankName"
-              value={formData.bankDetails?.bank_name || ''}
+              value={formData.bank_details?.bank_name || ''}
               onChange={(e) => handleBankDetailsChange('bank_name', e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
             >
@@ -212,7 +206,7 @@ const SettingsStep: React.FC<SettingsStepProps> = ({
             <input
               type="text"
               id="accountName"
-              value={formData.bankDetails?.account_name || ''}
+              value={formData.bank_details?.account_name || ''}
               onChange={(e) => handleBankDetailsChange('account_name', e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
               placeholder="Enter account holder name"
@@ -226,7 +220,7 @@ const SettingsStep: React.FC<SettingsStepProps> = ({
             <input
               type="text"
               id="accountNumber"
-              value={formData.bankDetails?.account_number || ''}
+              value={formData.bank_details?.account_number || ''}
               onChange={(e) => handleBankDetailsChange('account_number', e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-500 focus:border-purple-500"
               placeholder="Enter account number"
