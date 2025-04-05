@@ -5,7 +5,8 @@ import {
   BiCheck, BiStore, BiMobile, BiBarChart, 
   BiCreditCard, BiSupport, BiPackage, 
   BiLock, BiWorld, BiCustomize,
-  BiRocket, BiCalendar
+  BiRocket, BiCalendar, BiX,
+  BiDollar, BiUser, BiGlobe, BiTag
 } from "react-icons/bi";
 
 interface PlanFeature {
@@ -15,6 +16,7 @@ interface PlanFeature {
 interface Plan {
   id: string;
   name: string;
+  description: string;
   price: {
     monthly: string;
     yearly: string;
@@ -23,7 +25,11 @@ interface Plan {
   color: string;
   icon: React.ReactNode;
   popular?: boolean;
-  features: string[];
+  features: {
+    text: string;
+    included: boolean;
+    highlight?: boolean;
+  }[];
   savingsPercentage?: number;
 }
 
@@ -34,10 +40,11 @@ const PaymentPlansPage = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
 
-  const plans = [
+  const plans: Plan[] = [
     {
       id: "starter",
       name: "Starter",
+      description: "For new businesses just getting started",
       price: {
         monthly: "₦0",
         yearly: "₦0"
@@ -45,15 +52,25 @@ const PaymentPlansPage = () => {
       color: "#10B981", // Green
       popular: false,
       features: [
-        "Basic Storefront",
-        "100 Product Limit",
-        "Payment Integration",
+        { text: "Basic storefront", included: true },
+        { text: "Up to 100 products", included: true },
+        { text: "Basic payment integration", included: true },
+        { text: "Unlimited Products", included: false },
+        { text: "Sales channels (WhatsApp, Facebook)", included: false },
+        { text: "Marketing tools", included: false },
+        { text: "Auto-invoicing & receipts", included: false },
+        { text: "Customer database & CRM", included: false },
+        { text: "Abandoned cart recovery", included: false },
+        { text: "Custom domain", included: false },
+        { text: "Team members", included: false },
+        { text: "Support", included: false }
       ],
       icon: <BiStore className="w-6 h-6" />
     },
     {
       id: "pro",
       name: "Pro",
+      description: "For growing businesses ready to scale",
       price: {
         monthly: "₦4,500",
         yearly: "₦45,000"
@@ -62,18 +79,18 @@ const PaymentPlansPage = () => {
       color: "#FBBF24", // Yellow
       popular: true,
       features: [
-        "Full-featured Storefront",
-        "Unlimited Products",
-        "Instagram Product Import",
-        "AI Business Assistant",
-        "Sales Channels (WhatsApp, Facebook)",
-        "Inventory Management",
-        "Marketing Tools (Bulk SMS, Email)",
-        "Basic Sales Reports",
-        "Auto-Invoicing & Receipts",
-        "Customer Database & CRM",
-        "Abandoned Cart Recovery",
-        "Fast Support"
+        { text: "Full-featured storefront", included: true, highlight: true },
+        { text: "Unlimited Products", included: true, highlight: true },
+        { text: "Instagram product import", included: true, highlight: true },
+        { text: "AI Business Assistant", included: true, highlight: true },
+        { text: "Sales channels (WhatsApp, Facebook)", included: true },
+        { text: "Inventory management", included: true },
+        { text: "Marketing tools (Bulk SMS, Email)", included: true },
+        { text: "Auto-invoicing & receipts", included: true },
+        { text: "Customer database & CRM", included: true },
+        { text: "Abandoned cart recovery", included: true },
+        { text: "Basic sales reports", included: true },
+        { text: "Fast support", included: true }
       ],
       savingsPercentage: 17,
       icon: <BiBarChart className="w-6 h-6" />
@@ -81,6 +98,7 @@ const PaymentPlansPage = () => {
     {
       id: "business",
       name: "Business",
+      description: "For established businesses seeking growth",
       price: {
         monthly: "₦15,000",
         yearly: "₦150,000"
@@ -89,51 +107,58 @@ const PaymentPlansPage = () => {
       color: "#EF4444", // Red
       popular: false,
       features: [
-        "Advanced Store + Analytics",
-        "Unlimited Products",
-        "Custom Domain",
-        "Real-time Logistics Tracking",
-        "Dedicated Account Rep",
-        "Up to 5 Team Members",
-        "Advanced Insights + Customer Behavior",
-        "Referral Links & Promo Codes"
+        { text: "Everything in Pro, plus:", included: true, highlight: true },
+        { text: "Custom domain included", included: true, highlight: true },
+        { text: "Real-time logistics tracking", included: true, highlight: true },
+        { text: "Dedicated account representative", included: true, highlight: true },
+        { text: "Up to 5 team members", included: true, highlight: true },
+        { text: "Advanced analytics dashboard", included: true },
+        { text: "Customer behavior insights", included: true },
+        { text: "Referral links & promo codes", included: true },
+        { text: "Multiple payment gateways", included: true },
+        { text: "Priority customer support", included: true },
+        { text: "Advanced inventory management", included: true },
+        { text: "Unlimited discounts & coupons", included: true }
       ],
       savingsPercentage: 17,
       icon: <BiRocket className="w-6 h-6" />
     }
   ];
 
-  const getFeatureIcon = (feature: string): React.ReactElement => {
+  const getFeatureIcon = (feature: string, included: boolean): React.ReactElement => {
+    if (!included) {
+      return <BiX className="text-gray-400" />;
+    }
+    
     const iconMap: PlanFeature = {
-      "Basic Storefront": <BiStore />,
-      "Full-featured Storefront": <BiStore />,
-      "Advanced Store": <BiStore />,
-      "10 Product Limit": <BiPackage />,
-      "Unlimited Products": <BiPackage />,
-      "Instagram Product Import": <BiMobile />,
-      "AI Business Assistant": <BiCustomize />,
-      "Sales Channels": <BiMobile />,
-      "Inventory Management": <BiPackage />,
-      "Custom Domain": <BiWorld />,
-      "Logistics Integration": <BiPackage />,
-      "Payment Integration": <BiCreditCard />,
-      "Marketing Tools": <BiBarChart />,
-      "CAC Registration": <BiLock />,
-      "Business Analytics": <BiBarChart />,
-      "Auto-Invoicing": <BiCreditCard />,
-      "Customer Database": <BiCustomize />,
-      "Abandoned Cart": <BiStore />,
-      "Staff Access": <BiCustomize />,
-      "Priority Support": <BiSupport />,
+      "Basic storefront": <BiStore className="text-gray-600" />,
+      "Full-featured storefront": <BiStore className="text-green-500" />,
+      "Everything in Pro": <BiCheck className="text-green-600" />,
+      "Unlimited Products": <BiPackage className="text-green-500" />,
+      "Instagram product import": <BiMobile className="text-green-500" />,
+      "AI Business Assistant": <BiCustomize className="text-green-500" />,
+      "Sales channels": <BiMobile className="text-green-500" />,
+      "Inventory management": <BiPackage className="text-green-500" />,
+      "Custom domain": <BiWorld className="text-green-500" />,
+      "Real-time logistics": <BiPackage className="text-green-500" />,
+      "Basic payment": <BiCreditCard className="text-gray-600" />,
+      "Marketing tools": <BiBarChart className="text-green-500" />,
+      "Auto-invoicing": <BiCreditCard className="text-green-500" />,
+      "Customer database": <BiUser className="text-green-500" />,
+      "Abandoned cart": <BiStore className="text-green-500" />,
+      "team members": <BiUser className="text-green-500" />,
+      "Priority": <BiSupport className="text-green-500" />,
+      "Dedicated account": <BiSupport className="text-green-500" />,
+      "Fast support": <BiSupport className="text-green-500" />,
     };
     
     for (const [key, icon] of Object.entries(iconMap)) {
-      if (feature.includes(key)) {
+      if (feature.toLowerCase().includes(key.toLowerCase())) {
         return icon as React.ReactElement;
       }
     }
     
-    return <BiCheck />;
+    return included ? <BiCheck className="text-green-500" /> : <BiX className="text-gray-400" />;
   };
 
   const handlePlanSelect = (plan: Plan) => {
@@ -171,18 +196,6 @@ const PaymentPlansPage = () => {
       setProcessingPayment(false);
     }
   };
-
-  const toggleBillingCycle = () => {
-    setBillingCycle(prev => prev === "monthly" ? "yearly" : "monthly");
-  };
-
-  useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem("accessToken");
-    if (!token) {
-      router.push("/auth/signin");
-    }
-  }, [router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 to-gray-100 flex flex-col items-center py-12 px-4">
@@ -237,24 +250,13 @@ const PaymentPlansPage = () => {
         </div>
       </motion.div>
       
-      {/* Error message */}
-      {errorMessage && (
-        <motion.div 
-          className="w-full max-w-4xl bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded-r-lg"
-          initial={{ x: -20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-        >
-          <p className="text-red-700 text-sm">{errorMessage}</p>
-        </motion.div>
-      )}
-      
       {/* Plans Container */}
       <div className="w-full max-w-6xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.id}
-              className={`relative rounded-xl border-2 bg-white transition-all duration-300 overflow-hidden ${
+              className={`relative rounded-xl border-2 bg-white transition-all duration-300 overflow-hidden h-full flex flex-col ${
                 selectedPlan?.id === plan.id 
                   ? `ring-2 ring-opacity-50 shadow-lg transform scale-[1.02]` 
                   : 'border-gray-200 hover:border-gray-300'
@@ -277,7 +279,7 @@ const PaymentPlansPage = () => {
                   className="absolute top-0 right-0 bg-gradient-to-r from-purple-600 to-purple-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg"
                   style={{ borderTopRightRadius: '0.5rem' }}
                 >
-                  POPULAR
+                  MOST POPULAR
                 </div>
               )}
               
@@ -286,8 +288,8 @@ const PaymentPlansPage = () => {
                 style={{ backgroundColor: plan.color }}
               />
               
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
+              <div className="p-6 flex-1 flex flex-col">
+                <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center">
                     <div 
                       className="rounded-full p-2 mr-3"
@@ -315,6 +317,8 @@ const PaymentPlansPage = () => {
                   </div>
                 </div>
                 
+                <p className="text-gray-600 text-sm mb-4">{plan.description}</p>
+                
                 <div className="mb-6">
                   <motion.div
                     key={`${plan.id}-${billingCycle}`}
@@ -341,22 +345,41 @@ const PaymentPlansPage = () => {
                   )}
                 </div>
                 
-                <div className="space-y-3">
+                <div className="space-y-3 flex-1">
                   {plan.features.map((feature, idx) => (
                     <motion.div 
                       key={idx}
-                      className="flex items-center text-gray-700"
+                      className={`flex items-center ${
+                        feature.included ? 'text-gray-700' : 'text-gray-400'
+                      } ${feature.highlight ? 'font-medium' : ''}`}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3 + (0.05 * idx) }}
                     >
-                      <div className="text-gray-500 mr-2">
-                        {getFeatureIcon(feature)}
+                      <div className="mr-2 flex-shrink-0">
+                        {getFeatureIcon(feature.text, feature.included)}
                       </div>
-                      <span className="text-sm">{feature}</span>
+                      <span className="text-sm">{feature.text}</span>
                     </motion.div>
                   ))}
                 </div>
+                
+                <motion.button 
+                  className={`mt-6 w-full py-2 rounded-lg font-medium transition-all duration-300 ${
+                    plan.id === "starter" 
+                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
+                      : 'bg-gradient-to-r text-white'
+                  }`}
+                  style={{
+                    backgroundImage: plan.id !== "starter" 
+                      ? `linear-gradient(to right, ${plan.color}, ${plan.color}dd)` 
+                      : undefined
+                  }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {plan.id === "starter" ? "Start for Free" : "Choose Plan"}
+                </motion.button>
               </div>
             </motion.div>
           ))}
@@ -369,17 +392,13 @@ const PaymentPlansPage = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
         >
-          {selectedPlan?.id !== "starter" && (
+          {selectedPlan && selectedPlan.id !== "starter" && (
             <motion.button
               onClick={handleContinueToPayment}
-              disabled={!selectedPlan || processingPayment}
-              className={`px-10 py-4 rounded-lg font-medium text-lg shadow-md transition-all duration-300 ${
-                selectedPlan 
-                  ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600' 
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-              }`}
-              whileHover={selectedPlan ? { scale: 1.03 } : {}}
-              whileTap={selectedPlan ? { scale: 0.98 } : {}}
+              disabled={processingPayment}
+              className="px-10 py-4 rounded-lg font-medium text-lg shadow-md transition-all duration-300 bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.98 }}
             >
               {processingPayment ? (
                 <div className="flex items-center">
@@ -392,7 +411,7 @@ const PaymentPlansPage = () => {
                 </div>
               ) : (
                 <>
-                  {selectedPlan ? `Continue with ${selectedPlan.name} (${billingCycle})` : 'Select a plan to continue'}
+                  Continue with {selectedPlan.name} ({billingCycle})
                 </>
               )}
             </motion.button>
@@ -403,6 +422,96 @@ const PaymentPlansPage = () => {
           </p>
         </motion.div>
       </div>
+      
+      {/* Feature Comparison */}
+      <motion.div 
+        className="w-full max-w-6xl mt-16"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+      >
+        <h2 className="text-2xl font-bold text-center mb-8">Feature Comparison</h2>
+        
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="p-4 text-left text-gray-700">Feature</th>
+                {plans.map(plan => (
+                  <th key={plan.id} className="p-4 text-center">
+                    <div className="text-lg font-bold text-gray-800">{plan.name}</div>
+                    <div className="text-sm text-gray-500">{plan.price[billingCycle]}{plan.period}</div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {/* Store Features */}
+              <tr className="border-t border-gray-200 bg-gray-50">
+                <td colSpan={4} className="p-4 font-medium text-gray-700">Store Features</td>
+              </tr>
+              <tr className="border-t border-gray-100">
+                <td className="p-4 text-gray-700">Products</td>
+                <td className="p-4 text-center">10</td>
+                <td className="p-4 text-center">Unlimited</td>
+                <td className="p-4 text-center">Unlimited</td>
+              </tr>
+              <tr className="border-t border-gray-100">
+                <td className="p-4 text-gray-700">Custom Domain</td>
+                <td className="p-4 text-center"><BiX className="mx-auto text-gray-400" /></td>
+                <td className="p-4 text-center">Available (extra)</td>
+                <td className="p-4 text-center text-green-500 font-medium">Included</td>
+              </tr>
+              <tr className="border-t border-gray-100">
+                <td className="p-4 text-gray-700">Instagram Import</td>
+                <td className="p-4 text-center"><BiX className="mx-auto text-gray-400" /></td>
+                <td className="p-4 text-center"><BiCheck className="mx-auto text-green-500" /></td>
+                <td className="p-4 text-center"><BiCheck className="mx-auto text-green-500" /></td>
+              </tr>
+              
+              {/* Marketing */}
+              <tr className="border-t border-gray-200 bg-gray-50">
+                <td colSpan={4} className="p-4 font-medium text-gray-700">Marketing & Sales</td>
+              </tr>
+              <tr className="border-t border-gray-100">
+                <td className="p-4 text-gray-700">Marketing Tools</td>
+                <td className="p-4 text-center"><BiX className="mx-auto text-gray-400" /></td>
+                <td className="p-4 text-center">Basic</td>
+                <td className="p-4 text-center text-green-500 font-medium">Advanced</td>
+              </tr>
+              <tr className="border-t border-gray-100">
+                <td className="p-4 text-gray-700">Promo Codes</td>
+                <td className="p-4 text-center"><BiX className="mx-auto text-gray-400" /></td>
+                <td className="p-4 text-center">5</td>
+                <td className="p-4 text-center">Unlimited</td>
+              </tr>
+              
+              {/* Support */}
+              <tr className="border-t border-gray-200 bg-gray-50">
+                <td colSpan={4} className="p-4 font-medium text-gray-700">Support & Team</td>
+              </tr>
+              <tr className="border-t border-gray-100">
+                <td className="p-4 text-gray-700">Support</td>
+                <td className="p-4 text-center">Email</td>
+                <td className="p-4 text-center">Fast Response</td>
+                <td className="p-4 text-center text-green-500 font-medium">Priority</td>
+              </tr>
+              <tr className="border-t border-gray-100">
+                <td className="p-4 text-gray-700">Team Members</td>
+                <td className="p-4 text-center">0</td>
+                <td className="p-4 text-center">1</td>
+                <td className="p-4 text-center text-green-500 font-medium">Up to 5</td>
+              </tr>
+              <tr className="border-t border-gray-100">
+                <td className="p-4 text-gray-700">Account Manager</td>
+                <td className="p-4 text-center"><BiX className="mx-auto text-gray-400" /></td>
+                <td className="p-4 text-center"><BiX className="mx-auto text-gray-400" /></td>
+                <td className="p-4 text-center text-green-500 font-medium">Dedicated</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
     </div>
   );
 };
