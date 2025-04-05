@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BiArrowToLeft, BiChevronRight, BiImageAdd, BiUpload, BiX, BiLogOut } from 'react-icons/bi';
 import apiClient from '../../apiClient';
+import { CheckCircle } from 'lucide-react';
 
 interface ProductImage {
   file: File;
@@ -26,6 +27,7 @@ const AddProduct = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [businessName, setBusinessName] = useState('Your Business');
+  const [uploadSuccess, setUploadSuccess] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -178,7 +180,8 @@ const AddProduct = () => {
       });
       
       if (response.status === 201) {
-        router.push('/products/upload-success');
+        setUploadSuccess(true);
+        setTimeout(() => router.push('/dashboard'), 3000);
       }
     } catch (error: any) {
       console.error('Error uploading product:', error);
@@ -655,6 +658,53 @@ const AddProduct = () => {
           </div>
         </div>
       </div>
+      <AnimatePresence>
+  {/* Success Modal */}
+  {uploadSuccess && (
+    <motion.div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div
+        className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden"
+        initial={{ scale: 0.9, y: 20 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.9, y: 20 }}
+        transition={{ type: 'spring', damping: 20 }}
+      >
+        <div className="bg-purple-800 p-4 flex items-center">
+          <CheckCircle className="h-6 w-6 text-white mr-2" />
+          <h3 className="text-lg font-medium text-white">Success!</h3>
+        </div>
+        <div className="p-6">
+          <p className="text-gray-700">
+            Your product has been uploaded successfully!
+          </p>
+          <div className="mt-4 flex items-center">
+            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-purple-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span className="text-gray-600">Redirecting to dashboard in 3 seconds...</span>
+          </div>
+          <div className="mt-6 flex justify-end">
+            <button
+              onClick={() => {
+                setUploadSuccess(false);
+                router.push('/dashboard');
+              }}
+              className="px-4 py-2 bg-purple-800 text-white rounded-lg hover:bg-purple-600 transition-colors"
+            >
+              Go to Dashboard Now
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
     </div>
   );
 };

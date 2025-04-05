@@ -6,9 +6,11 @@ import { Fragment } from "react";
 import { 
   BiUser, BiEnvelope, BiLock, BiStore, 
   BiPhone, BiMap, BiArrowBack, 
-  BiChevronRight, BiShow, BiHide
+  BiChevronRight, BiShow, BiHide,
 } from "react-icons/bi";
 import { motion } from "framer-motion";
+
+
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -40,6 +42,8 @@ const Signup = () => {
     "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara"
   ];
 
+  
+  
   const handleChange = (e: { target: { name: any; value: any; }; }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -81,6 +85,7 @@ const Signup = () => {
     setStep("signup");
   };
 
+
   const handleSubmit = async () => {
     if (!validateBusinessSetup()) {
       setErrorMessage("Please fill all required fields");
@@ -104,7 +109,7 @@ const Signup = () => {
       setShowSuccessAnimation(true);
       
       setTimeout(() => {
-        router.push("/store/storefront");
+        router.push("/plan/payment");
       }, 2000);
       
     } catch (error: any) {
@@ -147,7 +152,6 @@ const Signup = () => {
     }
   };
 
-  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -172,7 +176,6 @@ const Signup = () => {
     }
   };
 
-  // Success animation variants
   const checkmarkVariants = {
     hidden: { pathLength: 0, opacity: 0 },
     visible: { 
@@ -198,7 +201,7 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-gray-70 flex items-center justify-center p-4">
       {/* Background decorative elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-1/3 h-full bg-purple-100 opacity-10 transform rotate-12 -translate-y-1/4"></div>
@@ -525,7 +528,7 @@ const Signup = () => {
                   Already have an account?{" "}
                   <a 
                     href="/auth/signin" 
-                    className="text-purple-600 hover:text-purple-800 font-medium transition-colors duration-200"
+                    className="text-purple-700 hover:text-purple-800 font-medium transition-colors duration-200"
                   >
                     Log in
                   </a>
@@ -673,7 +676,7 @@ const Signup = () => {
               value="false"
               checked={formData.is_cac_registered === "false"}
               onChange={handleChange}
-              className="hidden" // Hide the default radio button
+              className="hidden" 
             />
             <div className="flex items-center">
               <span className={`${
@@ -721,6 +724,7 @@ const Signup = () => {
                 </motion.div>
               </motion.div>
             </Transition>
+
           </div>
         </motion.div>
 
@@ -734,3 +738,6 @@ const Signup = () => {
 };
 
 export default Signup;
+
+
+

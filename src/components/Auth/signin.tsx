@@ -92,7 +92,7 @@ const Signin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-gray-70 flex items-center justify-center p-4">
       {/* Background decorative elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-1/3 h-full bg-purple-100 opacity-10 transform rotate-12 -translate-y-1/4"></div>
