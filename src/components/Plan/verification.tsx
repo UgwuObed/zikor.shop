@@ -3,13 +3,12 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
-import { BiCheckCircle, BiErrorCircle, BiLoaderCircle } from "react-icons/bi";
+import { BiCheckCircle, BiErrorCircle, BiLoaderCircle,  } from "react-icons/bi";
 import apiClient from '../../apiClient';
 
 const PaymentVerificationPage = () => {
   const router = useRouter();
-  const [reference, setReference] = useState<string | null>(null);
-  const [isClient, setIsClient] = useState(false);
+  const reference = router.query.reference || localStorage.getItem('payment_reference');
   
   const [verificationStatus, setVerificationStatus] = useState<'verifying' | 'success' | 'failure'>('verifying');
   const [message, setMessage] = useState("We're verifying your payment...");
@@ -17,20 +16,8 @@ const PaymentVerificationPage = () => {
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(5);
 
-  // Get reference safely
   useEffect(() => {
-    setIsClient(true);
-    const ref = router.query.reference || getCookie('payment_reference');
-    if (typeof ref === 'string' || ref === null) {
-      setReference(ref);
-    } else {
-      setReference(null);
-    }
-  }, [router.query]);
-
-  // Payment verification logic
-  useEffect(() => {
-    if (!isClient || !reference) return;
+    if (!reference) return;
     
     const accessToken = localStorage.getItem("accessToken");
     if (!accessToken) {
@@ -43,7 +30,7 @@ const PaymentVerificationPage = () => {
       try {
         const response = await apiClient.get(`/payment/verify/${reference}`, {
           headers: {
-            'Authorization': `Bearer ${accessToken}`
+            // 'Authorization': `Bearer ${accessToken}`
           }
         });
 
@@ -51,6 +38,7 @@ const PaymentVerificationPage = () => {
           setVerificationStatus('success');
           setMessage(response.data.message);
           setSubscription(response.data.subscription);
+          
           startCountdown();
         } else {
           setVerificationStatus('failure');
@@ -66,16 +54,7 @@ const PaymentVerificationPage = () => {
     };
 
     verifyPayment();
-  }, [reference, isClient]);
-
-  // Helper function to get cookies
-  const getCookie = (name: string) => {
-    if (typeof document === 'undefined') return null;
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(';').shift();
-    return null;
-  };
+  }, [reference]);
 
   const startCountdown = () => {
     const timer = setInterval(() => {
@@ -97,36 +76,6 @@ const PaymentVerificationPage = () => {
       router.push("/plan/payment"); 
     }
   };
-
-  if (!isClient) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 to-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent mb-4"></div>
-          <p>Loading payment verification...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!reference) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 to-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <BiErrorCircle className="mx-auto text-red-500 text-5xl mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Reference Missing</h2>
-          <p className="text-gray-600 mb-6">Please try the payment process again.</p>
-          <button 
-            onClick={() => router.push("/plan/payment")}
-            className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition"
-          >
-            Back to Payment
-          </button>
-        </div>
-      </div>
-    );
-  }
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 to-gray-100 flex flex-col items-center justify-center py-12 px-4">
