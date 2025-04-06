@@ -1,7 +1,9 @@
+'use client';
+
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
-import { BiCheckCircle, BiErrorCircle, BiLoaderCircle, BiArrowBack } from "react-icons/bi";
+import { BiCheckCircle, BiErrorCircle, BiLoaderCircle,  } from "react-icons/bi";
 import apiClient from '../../apiClient';
 
 const PaymentVerificationPage = () => {
