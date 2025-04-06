@@ -105,6 +105,7 @@ const Signup = () => {
       const response = await apiClient.post("/register", payload);
       localStorage.setItem("accessToken", response.data.token);
       localStorage.setItem("businessName", formData.business_name);
+      localStorage.setItem("userEmail", formData.email);
       
       setShowSuccessAnimation(true);
       

@@ -59,7 +59,7 @@ const PaymentPlansPage = () => {
         monthly: "₦0",
         yearly: "₦0"
       },
-      color: "#10B981", // Green
+      color: "#10B981", 
       popular: false,
       features: [
         { text: "Basic storefront", included: true },
@@ -86,7 +86,7 @@ const PaymentPlansPage = () => {
         yearly: "₦45,000"
       },
       period: billingCycle === "monthly" ? "/mo" : "/yr",
-      color: "#FBBF24", // Yellow
+      color: "#FBBF24",
       popular: true,
       features: [
         { text: "Full-featured storefront", included: true, highlight: true },
@@ -114,7 +114,7 @@ const PaymentPlansPage = () => {
         yearly: "₦150,000"
       },
       period: billingCycle === "monthly" ? "/mo" : "/yr",
-      color: "#EF4444", // Red
+      color: "#EF4444", 
       popular: false,
       features: [
         { text: "Everything in Pro, plus:", included: true, highlight: true },
@@ -171,39 +171,36 @@ const PaymentPlansPage = () => {
     return included ? <BiCheck className="text-green-500" /> : <BiX className="text-gray-400" />;
   };
 
-  const handlePlanSelect = (plan: Plan) => {
-    setSelectedPlan(plan);
-  };
-
-  const handleContinueToPayment = async () => {
-    if (!selectedPlan || !accessToken || !userEmail) return;
+  const continueToPayment = async (plan: Plan) => {
+    if (!accessToken || !userEmail) return;
     
+    setSelectedPlan(plan);
     setProcessingPayment(true);
     setErrorMessage("");
     
     try {
       const response = await apiClient.post("/payment/initialize", {
-        plan_id: selectedPlan.id === 'pro' ? 2 : selectedPlan.id === 'business' ? 3 : 1,
+        plan_id: plan.id === 'pro' ? 2 : plan.id === 'business' ? 3 : 1,
         billing_cycle: billingCycle,
-        email: userEmail
+        email: userEmail,
       }, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
         }
       });
-
-      if (selectedPlan.id === "starter") {
-        // For free plan, we still want to record it in the database
+  
+      if (plan.id === "starter") {
         router.push("/store/storefront");
       } else {
-        // Redirect to Paystack payment page for paid plans
+        localStorage.setItem("payment_reference", response.data.reference);
+        
         window.location.href = response.data.authorization_url;
       }
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 
-                         error.response?.data?.error || 
-                         error.message || 
-                         "An error occurred during payment processing";
+                        error.response?.data?.error || 
+                        error.message || 
+                        "An error occurred during payment processing";
       
       if (error.response?.data?.errors) {
         const errorMessages = Object.values(error.response.data.errors)
@@ -218,6 +215,11 @@ const PaymentPlansPage = () => {
     } finally {
       setProcessingPayment(false);
     }
+  };
+
+  
+  const handlePlanSelect = (plan: Plan) => {
+    setSelectedPlan(plan);
   };
 
   return (
@@ -272,6 +274,17 @@ const PaymentPlansPage = () => {
           </button>
         </div>
       </motion.div>
+      
+      {/* Display error message if there is one */}
+      {errorMessage && (
+        <motion.div 
+          className="w-full max-w-6xl mb-6 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          {errorMessage}
+        </motion.div>
+      )}
       
       {/* Plans Container */}
       <div className="w-full max-w-6xl">
@@ -388,7 +401,11 @@ const PaymentPlansPage = () => {
                 </div>
                 
                 <motion.button 
-                  className={`mt-6 w-full py-2 rounded-lg font-medium transition-all duration-300 ${
+                  className={`mt-6 w-full py-3 rounded-lg font-medium transition-all duration-300 ${
+                    processingPayment && selectedPlan?.id === plan.id
+                      ? 'opacity-70 cursor-not-allowed'
+                      : ''
+                  } ${
                     plan.id === "starter" 
                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
                       : 'bg-gradient-to-r text-white'
@@ -398,54 +415,47 @@ const PaymentPlansPage = () => {
                       ? `linear-gradient(to right, ${plan.color}, ${plan.color}dd)` 
                       : undefined
                   }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{ scale: processingPayment && selectedPlan?.id === plan.id ? 1 : 1.02 }}
+                  whileTap={{ scale: processingPayment && selectedPlan?.id === plan.id ? 1 : 0.98 }}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent triggering the parent onClick
+                    if (!processingPayment) {
+                      continueToPayment(plan);
+                    }
+                  }}
+                  disabled={processingPayment}
                 >
-                  {plan.id === "starter" ? "Start for Free" : "Choose Plan"}
+                  {processingPayment && selectedPlan?.id === plan.id ? (
+                    <div className="flex items-center justify-center">
+                      <motion.div
+                        className="h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                      />
+                      Processing...
+                    </div>
+                  ) : (
+                    <>
+                      {plan.id === "starter" ? "Start for Free" : `Choose ${plan.name} (${billingCycle})`}
+                    </>
+                  )}
                 </motion.button>
               </div>
             </motion.div>
           ))}
         </div>
         
-        {/* Continue Button */}
         <motion.div 
-          className="mt-12 flex flex-col items-center"
+          className="mt-8 flex flex-col items-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
         >
-          {selectedPlan && selectedPlan.id !== "starter" && (
-            <motion.button
-              onClick={handleContinueToPayment}
-              disabled={processingPayment}
-              className="px-10 py-4 rounded-lg font-medium text-lg shadow-md transition-all duration-300 bg-gradient-to-r from-purple-600 to-purple-500 text-white hover:from-purple-700 hover:to-purple-600"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              {processingPayment ? (
-                <div className="flex items-center">
-                  <motion.div
-                    className="h-5 w-5 border-2 border-white border-t-transparent rounded-full mr-2"
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                  />
-                  Processing...
-                </div>
-              ) : (
-                <>
-                  Continue with {selectedPlan.name} ({billingCycle})
-                </>
-              )}
-            </motion.button>
-          )}
-          
-          <p className="text-gray-500 text-sm mt-4">
+          <p className="text-gray-500 text-sm">
             You can change your plan any time after creating your store
           </p>
         </motion.div>
       </div>
-     
     </div>
   );
 };
