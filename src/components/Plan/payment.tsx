@@ -8,6 +8,7 @@ import {
   BiRocket, BiCalendar, BiX,
   BiDollar, BiUser, BiGlobe, BiTag
 } from "react-icons/bi";
+import apiClient from '../../apiClient';
 
 interface PlanFeature {
   [key: string]: React.ReactNode;
@@ -39,6 +40,15 @@ const PaymentPlansPage = () => {
   const [processingPayment, setProcessingPayment] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    const email = localStorage.getItem("userEmail"); 
+    setAccessToken(token);
+    setUserEmail(email);
+  }, []);
 
   const plans: Plan[] = [
     {
@@ -163,35 +173,48 @@ const PaymentPlansPage = () => {
 
   const handlePlanSelect = (plan: Plan) => {
     setSelectedPlan(plan);
-    
-    // Direct redirect for starter plan
-    if (plan.id === "starter") {
-      setProcessingPayment(true);
-      setTimeout(() => {
-        router.push("/store/storefront");
-      }, 800);
-    }
   };
 
   const handleContinueToPayment = async () => {
-    if (!selectedPlan) return;
+    if (!selectedPlan || !accessToken || !userEmail) return;
     
     setProcessingPayment(true);
     setErrorMessage("");
     
     try {
-      // Store selected plan in localStorage or state management
-      localStorage.setItem("selectedPlan", JSON.stringify({
-        ...selectedPlan,
-        billingCycle
-      }));
+      const response = await apiClient.post("/payment/initialize", {
+        plan_id: selectedPlan.id === 'pro' ? 2 : selectedPlan.id === 'business' ? 3 : 1,
+        billing_cycle: billingCycle,
+        email: userEmail
+      }, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+
+      if (selectedPlan.id === "starter") {
+        // For free plan, we still want to record it in the database
+        router.push("/store/storefront");
+      } else {
+        // Redirect to Paystack payment page for paid plans
+        window.location.href = response.data.authorization_url;
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 
+                         error.response?.data?.error || 
+                         error.message || 
+                         "An error occurred during payment processing";
       
-      await new Promise(resolve => setTimeout(resolve, 1500));
-    
-      router.push("/store/storefront");
-    } catch (error) {
-      setErrorMessage("Payment processing failed. Please try again.");
-      setTimeout(() => setErrorMessage(""), 3000);
+      if (error.response?.data?.errors) {
+        const errorMessages = Object.values(error.response.data.errors)
+                                  .flat()
+                                  .join('\n');
+        setErrorMessage(errorMessages);
+      } else {
+        setErrorMessage(errorMessage);
+      }
+      
+      setTimeout(() => setErrorMessage(""), 5000);
     } finally {
       setProcessingPayment(false);
     }
