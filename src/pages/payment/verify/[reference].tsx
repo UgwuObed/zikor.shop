@@ -8,10 +8,8 @@ const PaymentRedirect = () => {
 
   useEffect(() => {
     if (reference && typeof reference === 'string') {
-      // Store reference in cookie (works on server and client)
       setCookie('payment_reference', reference, { path: '/' });
       
-      // Redirect to your verification page
       window.location.href = `/plan/verify?reference=${reference}`;
     }
   }, [reference]);
