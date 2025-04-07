@@ -1,212 +1,199 @@
-'use client';
-
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { motion } from "framer-motion";
-import { BiCheckCircle, BiErrorCircle, BiLoaderCircle,  } from "react-icons/bi";
 import apiClient from '../../apiClient';
 
-const PaymentVerificationPage = () => {
-  const router = useRouter();
-  const reference = router.query.reference || localStorage.getItem('payment_reference');
-  
-  const [verificationStatus, setVerificationStatus] = useState<'verifying' | 'success' | 'failure'>('verifying');
-  const [message, setMessage] = useState("We're verifying your payment...");
-  const [subscription, setSubscription] = useState<any>(null);
-  const [error, setError] = useState("");
-  const [countdown, setCountdown] = useState(5);
+interface VerificationResponse {
+  success?: boolean;
+  status?: string;
+  message?: string;
+  subscription?: any;
+  redirect_url?: string;
+}
 
+const PaymentVerification = () => {
+  const router = useRouter();
+  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
+  const [message, setMessage] = useState("");
+  const [accessToken, setAccessToken] = useState<string | null>(null);
+  
   useEffect(() => {
-    if (!reference) return;
+    const token = localStorage.getItem("accessToken");
+    setAccessToken(token);
+  }, []);
+  
+  useEffect(() => {
+    if (!router.isReady || !accessToken) return;
     
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) {
-      setVerificationStatus('failure');
-      setMessage("Authentication error. Please log in again.");
+    // Get reference from URL query or localStorage
+    const reference = router.query.reference || localStorage.getItem("payment_reference");
+    
+    if (!reference) {
+      setStatus("error");
+      setMessage("Payment reference not found. Please try again or contact support.");
       return;
     }
-
+    
     const verifyPayment = async () => {
       try {
-        const response = await apiClient.get(`/payment/verify/${reference}`, {
+        const response = await apiClient.get<VerificationResponse>(`/payment/verify/${reference}`, {
           headers: {
-            // 'Authorization': `Bearer ${accessToken}`
+            'Authorization': `Bearer ${accessToken}`
           }
         });
-
-        if (response.data.success) {
-          setVerificationStatus('success');
-          setMessage(response.data.message);
-          setSubscription(response.data.subscription);
+        
+        console.log("Payment verification response:", response.data);
+        
+        // Check if the response indicates success
+        // Look for either success: true OR status: "success"
+        if (
+          response.data.success === true || 
+          response.data.status === "success" ||
+          (response.data.message && response.data.message.toLowerCase().includes("success"))
+        ) {
+          setStatus("success");
+          setMessage(response.data.message || "Payment successful! Setting up your store...");
           
-          startCountdown();
+          // Clear payment reference
+          localStorage.removeItem("payment_reference");
+          
+          // Get redirect URL from response or use default
+          const redirectTo = response.data.redirect_url || "/store/storefront";
+          
+          // Redirect after 3 seconds
+          setTimeout(() => {
+            router.push(redirectTo);
+          }, 3000);
         } else {
-          setVerificationStatus('failure');
-          setMessage(response.data.message || "Payment verification failed.");
+          setStatus("error");
+          setMessage(response.data.message || "Payment verification failed. Please contact support.");
         }
       } catch (error: any) {
-        setVerificationStatus('failure');
-        const errorMsg = error.response?.data?.message || 
-                        "An error occurred during payment verification. Please contact support.";
-        setMessage("Payment verification failed.");
-        setError(errorMsg);
+        console.error("Payment verification error:", error);
+        
+        // Check if the error response contains success information
+        const errorData = error.response?.data as VerificationResponse | undefined;
+        
+        if (
+          errorData?.success === true || 
+          (errorData?.message && errorData.message.toLowerCase().includes("success"))
+        ) {
+          setStatus("success");
+          setMessage(errorData.message || "Payment successful!");
+          
+          // Clear payment reference
+          localStorage.removeItem("payment_reference");
+          
+          // Get redirect URL from response or use default
+          const redirectTo = errorData.redirect_url || "/store/storefront";
+          
+          // Redirect after 3 seconds
+          setTimeout(() => {
+            router.push(redirectTo);
+          }, 3000);
+        } else {
+          setStatus("error");
+          setMessage(
+            errorData?.message || 
+            error.response?.data?.error || 
+            "An error occurred during payment verification. Please contact support."
+          );
+        }
       }
     };
-
+    
     verifyPayment();
-  }, [reference]);
-
-  const startCountdown = () => {
-    const timer = setInterval(() => {
-      setCountdown((prevCount) => {
-        if (prevCount <= 1) {
-          clearInterval(timer);
-          router.push("/store/storefront");
-          return 0;
-        }
-        return prevCount - 1;
-      });
-    }, 1000);
-  };
-
-  const handleManualContinue = () => {
-    if (verificationStatus === 'success') {
-      router.push("/store/storefront");
-    } else {
-      router.push("/plan/payment"); 
-    }
-  };
-
+  }, [router.isReady, accessToken, router]);
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-100 to-gray-100 flex flex-col items-center justify-center py-12 px-4">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-xl w-full max-w-md p-8 text-center"
+        className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full text-center"
       >
-        {verificationStatus === 'verifying' && (
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-            className="mx-auto text-purple-600 mb-6"
-          >
-            <BiLoaderCircle size={80} />
-          </motion.div>
-        )}
-
-        {verificationStatus === 'success' && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 15 }}
-            className="mx-auto text-purple-500 mb-6"
-          >
-            <BiCheckCircle size={80} />
-          </motion.div>
-        )}
-
-        {verificationStatus === 'failure' && (
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 200, damping: 15 }}
-            className="mx-auto text-red-500 mb-6"
-          >
-            <BiErrorCircle size={80} />
-          </motion.div>
-        )}
-
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">
-          {verificationStatus === 'verifying' ? 'Verifying Payment' : 
-           verificationStatus === 'success' ? 'Payment Successful!' : 
-           'Payment Verification Failed'}
-        </h2>
-
-        <p className="text-gray-600 mb-6">
-          {message}
-        </p>
-
-        {error && (
-          <div className="bg-red-50 text-red-700 p-3 rounded-lg mb-6 text-sm">
-            {error}
-          </div>
-        )}
-
-        {subscription && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-purple-50 rounded-lg p-4 mb-6 text-left"
-          >
-            <h3 className="font-medium text-purple-800 mb-2">Subscription Details</h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div className="text-gray-600">Plan:</div>
-              <div className="font-medium text-gray-800">
-                {subscription.plan_id === 1 ? "Starter" : 
-                 subscription.plan_id === 2 ? "Pro" : "Business"}
-              </div>
-              
-              <div className="text-gray-600">Billing Cycle:</div>
-              <div className="font-medium text-gray-800 capitalize">
-                {subscription.billing_cycle}
-              </div>
-              
-              <div className="text-gray-600">Start Date:</div>
-              <div className="font-medium text-gray-800">
-                {new Date(subscription.start_date).toLocaleDateString()}
-              </div>
-              
-              <div className="text-gray-600">Expiry Date:</div>
-              <div className="font-medium text-gray-800">
-                {new Date(subscription.end_date).toLocaleDateString()}
-              </div>
-              
-              <div className="text-gray-600">Status:</div>
-              <div className="font-medium text-purple-600 capitalize">
-                {subscription.status}
-              </div>
+        {status === "loading" && (
+          <>
+            <div className="flex justify-center mb-6">
+              <motion.div
+                className="h-16 w-16 border-4 border-purple-600 border-t-transparent rounded-full"
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+              />
             </div>
-          </motion.div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Verifying Payment</h2>
+            <p className="text-gray-600">Please wait while we verify your payment...</p>
+          </>
         )}
-
-        {verificationStatus === 'success' && (
-          <p className="text-sm text-gray-500 mb-6">
-            Redirecting to your storefront in {countdown} seconds...
-          </p>
+        
+        {status === "success" && (
+          <>
+            <div className="flex justify-center mb-6">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center"
+              >
+                <svg className="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </motion.div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Successful!</h2>
+            <p className="text-gray-600 mb-4">{message}</p>
+            <div className="flex justify-center">
+              <motion.div
+                className="h-2 w-32 bg-gray-200 rounded-full overflow-hidden"
+              >
+                <motion.div
+                  className="h-full bg-purple-600"
+                  initial={{ width: 0 }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 3 }}
+                />
+              </motion.div>
+            </div>
+          </>
         )}
-
-        <motion.button
-          onClick={handleManualContinue}
-          className={`w-full py-3 rounded-lg font-medium transition-all duration-300 ${
-            verificationStatus === 'success' 
-              ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white' 
-              : verificationStatus === 'failure'
-              ? 'bg-gradient-to-r from-red-500 to-red-600 text-white'
-              : 'bg-gradient-to-r from-purple-600 to-purple-500 text-white'
-          }`}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          {verificationStatus === 'success' 
-            ? 'Continue to Storefront' 
-            : verificationStatus === 'failure'
-            ? 'Back to Plans'
-            : 'Please wait...'}
-        </motion.button>
-
-        {verificationStatus === 'failure' && (
-          <div className="mt-6 text-sm text-gray-600">
-            <p>
-              If you believe this is an error, please contact our support team for assistance.
-            </p>
-            <a href="mailto:support@zikor.shop" className="text-purple-600 hover:text-purple-800 font-medium mt-2 inline-block">
-              Contact Support
-            </a>
-          </div>
+        
+        {status === "error" && (
+          <>
+            <div className="flex justify-center mb-6">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="h-16 w-16 bg-red-100 rounded-full flex items-center justify-center"
+              >
+                <svg className="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </motion.div>
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Verification Failed</h2>
+            <p className="text-gray-600 mb-6">{message}</p>
+            <div className="flex justify-center space-x-4">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-5 py-2.5 bg-purple-600 text-white rounded-lg font-medium"
+                onClick={() => router.push("/plan/payment")}
+              >
+                Return to Plans
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg font-medium"
+                onClick={() => window.location.href = "mailto:support@zikor.shop"}
+              >
+                Contact Support
+              </motion.button>
+            </div>
+          </>
         )}
       </motion.div>
     </div>
   );
 };
 
-export default PaymentVerificationPage;
+export default PaymentVerification;

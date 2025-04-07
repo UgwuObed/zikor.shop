@@ -183,8 +183,6 @@ const PaymentPlansPage = () => {
         plan_id: plan.id === 'pro' ? 2 : plan.id === 'business' ? 3 : 1,
         billing_cycle: billingCycle,
         email: userEmail,
-         callback_url: `${window.location.origin}/payment/verify`, // Use this for production
-        local_callback_url: `${window.location.origin}/plan/verify`
       }, {
         headers: {
           'Authorization': `Bearer ${accessToken}`
