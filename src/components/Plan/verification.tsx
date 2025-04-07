@@ -12,14 +12,15 @@ interface Subscription {
 
 const PaymentVerificationPage = () => {
   const router = useRouter();
-  const { reference } = router.query;
+  const { reference, trxref } = router.query;
   
   const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Verifying your payment...');
   const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   
   useEffect(() => {
-    if (!reference) return;
+    if (!reference && !trxref) return;
     
     const verifyPayment = async () => {
       try {
@@ -32,39 +33,118 @@ const PaymentVerificationPage = () => {
           return;
         }
         
-        const response = await apiClient.get(`/payment/verify/${reference}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        // Use either reference or trxref, whichever is available
+        const paymentRef = reference || trxref;
+        setDebugInfo(`Using reference: ${paymentRef}`);
         
-        if (response.data.success) {
-          setVerificationStatus('success');
-          setMessage(response.data.message);
-          setSubscription(response.data.subscription);
+        // Fall back to direct verification if the API fails
+        try {
+          // First attempt with the API client
+          const response = await apiClient.get(`/payment/verify/${paymentRef}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            // Add timeout to prevent long-hanging requests
+            timeout: 10000
+          });
           
-          localStorage.removeItem('payment_reference');
+          if (response.data.success) {
+            handleSuccess(response.data);
+          } else {
+            // Try alternative API endpoint if first one fails
+            throw new Error('Primary verification failed');
+          }
+        } catch (apiError) {
+          console.warn('API client verification failed, trying direct fetch:', apiError);
           
-          setTimeout(() => {
-            if (response.data.redirect_url) {
-              router.push(response.data.redirect_url);
-            } else {
-              router.push('/store/storefront');
+          // Second attempt with direct fetch
+          try {
+            const directResponse = await fetch(`/api/payment/verify?reference=${paymentRef}`, {
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            if (!directResponse.ok) {
+              throw new Error(`Direct fetch failed with status: ${directResponse.status}`);
             }
-          }, 5000);
-        } else {
-          setVerificationStatus('error');
-          setMessage(response.data.message || 'Payment verification failed');
+            
+            const data = await directResponse.json();
+            if (data.success) {
+              handleSuccess(data);
+            } else {
+              throw new Error(data.message || 'Payment verification failed');
+            }
+          } catch (directError) {
+            console.error('Direct verification failed:', directError);
+            
+            // Last resort - verify with payment provider
+            try {
+              // This assumes you have a fallback endpoint that verifies directly with the payment provider
+              const fallbackResponse = await fetch(`/api/payment/verify-external?reference=${paymentRef}`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                }
+              });
+              
+              if (!fallbackResponse.ok) {
+                throw new Error(`Fallback verification failed with status: ${fallbackResponse.status}`);
+              }
+              
+              const fallbackData = await fallbackResponse.json();
+              if (fallbackData.success) {
+                handleSuccess(fallbackData);
+              } else {
+                throw new Error(fallbackData.message || 'External payment verification failed');
+              }
+            } catch (fallbackError) {
+              handleError(fallbackError);
+            }
+          }
         }
       } catch (error: any) {
-        console.error('Verification error:', error);
-        setVerificationStatus('error');
-        setMessage(error.response?.data?.message || 'Payment verification failed. Please contact support.');
+        handleError(error);
       }
     };
     
+    const handleSuccess = (data: any) => {
+      setVerificationStatus('success');
+      setMessage(data.message || 'Payment verified successfully!');
+      if (data.subscription) {
+        setSubscription(data.subscription);
+      }
+      
+      localStorage.removeItem('payment_reference');
+      
+      setTimeout(() => {
+        if (data.redirect_url) {
+          router.push(data.redirect_url);
+        } else {
+          router.push('/store/storefront');
+        }
+      }, 3000);
+    };
+    
+    const handleError = (error: any) => {
+      console.error('Verification error:', error);
+      setVerificationStatus('error');
+      setMessage(error.response?.data?.message || error.message || 'Payment verification failed. Please contact support.');
+      setDebugInfo(`Error: ${error.message || 'Unknown error'}`);
+    };
+    
     verifyPayment();
-  }, [reference, router]);
+  }, [reference, trxref, router]);
+  
+  const handleRetry = () => {
+    window.location.reload();
+  };
+  
+  const handleManualCheck = () => {
+    // Navigate to a page where the user can check their payment status manually
+    router.push('/account/payments');
+  };
   
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-purple-50 to-white">
@@ -114,7 +194,7 @@ const PaymentVerificationPage = () => {
             
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
               {verificationStatus === 'loading' ? 'Verifying Payment' :
-               verificationStatus === 'success' ? 'Payment Successful!' : 'Payment Failed'}
+               verificationStatus === 'success' ? 'Payment Successful!' : 'Verification Failed'}
             </h2>
             
             <p className="text-gray-600 text-center mb-8">{message}</p>
@@ -182,20 +262,40 @@ const PaymentVerificationPage = () => {
           )}
           
           {verificationStatus === 'error' && (
-            <motion.button
-              className="w-full bg-purple-600 text-white py-3 rounded-xl font-medium transition-all"
-              whileHover={{ 
-                backgroundColor: "#7c3aed",
-                boxShadow: "0 4px 12px rgba(124, 58, 237, 0.3)" 
-              }}
-              whileTap={{ scale: 0.98 }}
+            <motion.div
+              className="flex flex-col space-y-3"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
-              onClick={() => router.push('/plan/payment')}
             >
-              Try Again
-            </motion.button>
+              <motion.button
+                className="w-full bg-purple-600 text-white py-3 rounded-xl font-medium transition-all"
+                whileHover={{ 
+                  backgroundColor: "#7c3aed",
+                  boxShadow: "0 4px 12px rgba(124, 58, 237, 0.3)" 
+                }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleRetry}
+              >
+                Try Again
+              </motion.button>
+              
+              <motion.button
+                className="w-full bg-white text-purple-600 border border-purple-200 py-3 rounded-xl font-medium transition-all"
+                whileHover={{ backgroundColor: "#f9f5ff" }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleManualCheck}
+              >
+                Check My Payments
+              </motion.button>
+            </motion.div>
+          )}
+          
+          {/* Debug information, only shown in development or controlled by env var */}
+          {process.env.NODE_ENV === 'development' && debugInfo && (
+            <div className="mt-6 p-3 bg-gray-100 rounded-md text-xs font-mono text-gray-600 overflow-auto max-h-32">
+              {debugInfo}
+            </div>
           )}
         </div>
       </motion.div>
