@@ -3,13 +3,24 @@ import { useEffect } from 'react';
 
 const PaymentRedirect = () => {
   const router = useRouter();
-  const { reference } = router.query;
+  const { reference, trxref } = router.query;
   
   useEffect(() => {
-    if (reference) {
-      router.replace(`/plan/verify?reference=${reference}`);
+    // Handle both reference formats
+    const ref = reference || trxref;
+    if (ref) {
+      router.replace(`/plan/verify?reference=${ref}`);
+    } else {
+      // Fallback to check URL path for reference
+      const pathRef = window.location.pathname.split('/').pop();
+      if (pathRef) {
+        router.replace(`/plan/verify?reference=${pathRef}`);
+      } else {
+        // If no reference found, redirect to home or error page
+        router.replace('/');
+      }
     }
-  }, [reference, router]);
+  }, [reference, trxref, router]);
   
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-100 to-gray-100">
