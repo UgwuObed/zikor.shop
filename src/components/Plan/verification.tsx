@@ -25,18 +25,22 @@ const PaymentVerification = () => {
   useEffect(() => {
     if (!router.isReady || !accessToken) return;
     
-    // Get reference from URL query or localStorage
-    const reference = router.query.reference || localStorage.getItem("payment_reference");
-    
-    if (!reference) {
-      setStatus("error");
-      setMessage("Payment reference not found. Please try again or contact support.");
-      return;
-    }
+    const ref = 
+    router.query.reference || 
+    router.query.trxref ||
+    new URLSearchParams(window.location.search).get('reference') ||
+    new URLSearchParams(window.location.search).get('trxref') ||
+    localStorage.getItem("payment_reference");
+
+  if (!ref) {
+    setStatus("error");
+    setMessage("Payment reference not found");
+    return;
+  }
     
     const verifyPayment = async () => {
       try {
-        const response = await apiClient.get<VerificationResponse>(`/payment/verify/${reference}`, {
+        const response = await apiClient.get<VerificationResponse>(`/payment/verify/${ref}`, {
           headers: {
             'Authorization': `Bearer ${accessToken}`
           }
