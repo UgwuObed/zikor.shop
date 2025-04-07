@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import { motion } from 'framer-motion';
 import { BiCheckCircle, BiErrorCircle, BiLoader } from 'react-icons/bi';
@@ -14,136 +14,72 @@ const PaymentVerificationPage = () => {
   const router = useRouter();
   const { reference, trxref } = router.query;
   
-  const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('Verifying your payment...');
+  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [message, setMessage] = useState('Click the button below to verify your payment');
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   
-  useEffect(() => {
-    if (!reference && !trxref) return;
+  const handleVerifyClick = async () => {
+    if (verificationStatus === 'loading') return;
     
-    const verifyPayment = async () => {
-      try {
-        const token = localStorage.getItem('accessToken');
-        
-        if (!token) {
-          setVerificationStatus('error');
-          setMessage('Authentication error. Please login again.');
-          setTimeout(() => router.push('/auth/login'), 3000);
-          return;
+    const paymentRef = reference || trxref;
+    if (!paymentRef) {
+      setVerificationStatus('error');
+      setMessage('No payment reference found. Please contact support.');
+      return;
+    }
+    
+    // Set loading state
+    setVerificationStatus('loading');
+    setMessage('Verifying your payment...');
+    
+    try {
+      const token = localStorage.getItem('accessToken');
+      
+      if (!token) {
+        setVerificationStatus('error');
+        setMessage('Authentication error. Please login again.');
+        setTimeout(() => router.push('/auth/login'), 3000);
+        return;
+      }
+      
+      const response = await apiClient.get(`/payment/verify/${paymentRef}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
+      });
+      
+      if (response.data.success) {
+        setVerificationStatus('success');
+        setMessage(response.data.message || 'Payment verified successfully!');
+        setSubscription(response.data.subscription);
         
-        // Use either reference or trxref, whichever is available
-        const paymentRef = reference || trxref;
-        setDebugInfo(`Using reference: ${paymentRef}`);
+        localStorage.removeItem('payment_reference');
         
-        // Fall back to direct verification if the API fails
-        try {
-          // First attempt with the API client
-          const response = await apiClient.get(`/payment/verify/${paymentRef}`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            },
-            // Add timeout to prevent long-hanging requests
-            timeout: 10000
-          });
-          
-          if (response.data.success) {
-            handleSuccess(response.data);
+        setTimeout(() => {
+          if (response.data.redirect_url) {
+            router.push(response.data.redirect_url);
           } else {
-            // Try alternative API endpoint if first one fails
-            throw new Error('Primary verification failed');
+            router.push('/store/storefront');
           }
-        } catch (apiError) {
-          console.warn('API client verification failed, trying direct fetch:', apiError);
-          
-          // Second attempt with direct fetch
-          try {
-            const directResponse = await fetch(`/api/payment/verify?reference=${paymentRef}`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            if (!directResponse.ok) {
-              throw new Error(`Direct fetch failed with status: ${directResponse.status}`);
-            }
-            
-            const data = await directResponse.json();
-            if (data.success) {
-              handleSuccess(data);
-            } else {
-              throw new Error(data.message || 'Payment verification failed');
-            }
-          } catch (directError) {
-            console.error('Direct verification failed:', directError);
-            
-            // Last resort - verify with payment provider
-            try {
-              // This assumes you have a fallback endpoint that verifies directly with the payment provider
-              const fallbackResponse = await fetch(`/api/payment/verify-external?reference=${paymentRef}`, {
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                }
-              });
-              
-              if (!fallbackResponse.ok) {
-                throw new Error(`Fallback verification failed with status: ${fallbackResponse.status}`);
-              }
-              
-              const fallbackData = await fallbackResponse.json();
-              if (fallbackData.success) {
-                handleSuccess(fallbackData);
-              } else {
-                throw new Error(fallbackData.message || 'External payment verification failed');
-              }
-            } catch (fallbackError) {
-              handleError(fallbackError);
-            }
-          }
-        }
-      } catch (error: any) {
-        handleError(error);
+        }, 3000);
+      } else {
+        setVerificationStatus('error');
+        setMessage(response.data.message || 'Payment verification failed');
       }
-    };
-    
-    const handleSuccess = (data: any) => {
-      setVerificationStatus('success');
-      setMessage(data.message || 'Payment verified successfully!');
-      if (data.subscription) {
-        setSubscription(data.subscription);
-      }
-      
-      localStorage.removeItem('payment_reference');
-      
-      setTimeout(() => {
-        if (data.redirect_url) {
-          router.push(data.redirect_url);
-        } else {
-          router.push('/store/storefront');
-        }
-      }, 3000);
-    };
-    
-    const handleError = (error: any) => {
+    } catch (error: any) {
       console.error('Verification error:', error);
       setVerificationStatus('error');
-      setMessage(error.response?.data?.message || error.message || 'Payment verification failed. Please contact support.');
-      setDebugInfo(`Error: ${error.message || 'Unknown error'}`);
-    };
-    
-    verifyPayment();
-  }, [reference, trxref, router]);
-  
-  const handleRetry = () => {
-    window.location.reload();
+      setMessage(error.response?.data?.message || 'Payment verification failed. Please contact support.');
+    }
   };
   
-  const handleManualCheck = () => {
-    // Navigate to a page where the user can check their payment status manually
-    router.push('/account/payments');
+  const handleRetry = () => {
+    setVerificationStatus('idle');
+    setMessage('Click the button below to create your subscription');
+  };
+  
+  const handleGoToStore = () => {
+    router.push('/store/storefront');
   };
   
   return (
@@ -152,13 +88,10 @@ const PaymentVerificationPage = () => {
         className="w-full max-w-md bg-white rounded-2xl overflow-hidden shadow-lg"
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ 
-          type: "spring", 
-          stiffness: 100, 
-          damping: 15 
-        }}
+        transition={{ type: "spring", stiffness: 100, damping: 15 }}
       >
         <div className={`w-full h-2 ${
+          verificationStatus === 'idle' ? 'bg-gray-300' :
           verificationStatus === 'loading' ? 'bg-purple-500' :
           verificationStatus === 'success' ? 'bg-green-500' : 'bg-red-500'
         }`}></div>
@@ -167,6 +100,7 @@ const PaymentVerificationPage = () => {
           <div className="flex flex-col items-center">
             <motion.div 
               className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${
+                verificationStatus === 'idle' ? 'bg-gray-100' :
                 verificationStatus === 'loading' ? 'bg-purple-100' :
                 verificationStatus === 'success' ? 'bg-green-100' : 'bg-red-100'
               }`}
@@ -174,6 +108,14 @@ const PaymentVerificationPage = () => {
               animate={{ scale: 1 }}
               transition={{ type: "spring", stiffness: 200 }}
             >
+              {verificationStatus === 'idle' && (
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500">
+                  <path d="M21 9V3H15"></path>
+                  <path d="M21 3l-9 9-4-4-7 7"></path>
+                </svg>
+              )}
+              
               {verificationStatus === 'loading' && (
                 <motion.div
                   animate={{ rotate: 360 }}
@@ -193,7 +135,8 @@ const PaymentVerificationPage = () => {
             </motion.div>
             
             <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              {verificationStatus === 'loading' ? 'Verifying Payment' :
+              {verificationStatus === 'idle' ? 'Payment Verification' :
+               verificationStatus === 'loading' ? 'Verifying Payment' :
                verificationStatus === 'success' ? 'Payment Successful!' : 'Verification Failed'}
             </h2>
             
@@ -242,6 +185,39 @@ const PaymentVerificationPage = () => {
             </motion.div>
           )}
           
+          {verificationStatus === 'idle' && (
+            <motion.div
+              className="flex flex-col space-y-3"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              <motion.button
+                className="w-full bg-purple-600 text-white py-3 rounded-xl font-medium transition-all"
+                whileHover={{ 
+                  backgroundColor: "#7c3aed",
+                  boxShadow: "0 4px 12px rgba(124, 58, 237, 0.3)" 
+                }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleVerifyClick}
+              >
+                <div className="flex items-center justify-center">
+                  <span>Verify Payment</span>
+                  <div className="ml-2">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" 
+                      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="9 18 15 12 9 6"></polyline>
+                    </svg>
+                  </div>
+                </div>
+              </motion.button>
+              
+              <p className="text-xs text-gray-500 text-center mt-2">
+                Reference: {reference || trxref || 'Not available'}
+              </p>
+            </motion.div>
+          )}
+          
           {verificationStatus === 'success' && (
             <motion.div 
               className="flex items-center justify-center text-sm text-gray-500"
@@ -284,18 +260,11 @@ const PaymentVerificationPage = () => {
                 className="w-full bg-white text-purple-600 border border-purple-200 py-3 rounded-xl font-medium transition-all"
                 whileHover={{ backgroundColor: "#f9f5ff" }}
                 whileTap={{ scale: 0.98 }}
-                onClick={handleManualCheck}
+                onClick={handleGoToStore}
               >
-                Check My Payments
+                Return to Store
               </motion.button>
             </motion.div>
-          )}
-          
-          {/* Debug information, only shown in development or controlled by env var */}
-          {process.env.NODE_ENV === 'development' && debugInfo && (
-            <div className="mt-6 p-3 bg-gray-100 rounded-md text-xs font-mono text-gray-600 overflow-auto max-h-32">
-              {debugInfo}
-            </div>
           )}
         </div>
       </motion.div>
