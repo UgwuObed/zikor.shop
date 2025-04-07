@@ -1,203 +1,206 @@
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/router";
-import { motion } from "framer-motion";
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import { motion } from 'framer-motion';
+import { BiCheckCircle, BiErrorCircle, BiLoader } from 'react-icons/bi';
 import apiClient from '../../apiClient';
 
-interface VerificationResponse {
-  success?: boolean;
-  status?: string;
-  message?: string;
-  subscription?: any;
-  redirect_url?: string;
+interface Subscription {
+  start_date: string;
+  end_date: string;
+  billing_cycle: 'monthly' | 'yearly';
 }
 
-const PaymentVerification = () => {
+const PaymentVerificationPage = () => {
   const router = useRouter();
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [message, setMessage] = useState("");
-  const [accessToken, setAccessToken] = useState<string | null>(null);
+  const { reference } = router.query;
+  
+  const [verificationStatus, setVerificationStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [message, setMessage] = useState('Verifying your payment...');
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    setAccessToken(token);
-  }, []);
-  
-  useEffect(() => {
-    if (!router.isReady || !accessToken) return;
-    
-    const ref = 
-    router.query.reference || 
-    router.query.trxref ||
-    new URLSearchParams(window.location.search).get('reference') ||
-    new URLSearchParams(window.location.search).get('trxref') ||
-    localStorage.getItem("payment_reference");
-
-  if (!ref) {
-    setStatus("error");
-    setMessage("Payment reference not found");
-    return;
-  }
+    if (!reference) return;
     
     const verifyPayment = async () => {
       try {
-        const response = await apiClient.get<VerificationResponse>(`/payment/verify/${ref}`, {
+        const token = localStorage.getItem('accessToken');
+        
+        if (!token) {
+          setVerificationStatus('error');
+          setMessage('Authentication error. Please login again.');
+          setTimeout(() => router.push('/auth/login'), 3000);
+          return;
+        }
+        
+        const response = await apiClient.get(`/payment/verify/${reference}`, {
           headers: {
-            'Authorization': `Bearer ${accessToken}`
+            'Authorization': `Bearer ${token}`
           }
         });
         
-        console.log("Payment verification response:", response.data);
-        
-        // Check if the response indicates success
-        // Look for either success: true OR status: "success"
-        if (
-          response.data.success === true || 
-          response.data.status === "success" ||
-          (response.data.message && response.data.message.toLowerCase().includes("success"))
-        ) {
-          setStatus("success");
-          setMessage(response.data.message || "Payment successful! Setting up your store...");
+        if (response.data.success) {
+          setVerificationStatus('success');
+          setMessage(response.data.message);
+          setSubscription(response.data.subscription);
           
-          // Clear payment reference
-          localStorage.removeItem("payment_reference");
+          localStorage.removeItem('payment_reference');
           
-          // Get redirect URL from response or use default
-          const redirectTo = response.data.redirect_url || "/store/storefront";
-          
-          // Redirect after 3 seconds
           setTimeout(() => {
-            router.push(redirectTo);
-          }, 3000);
+            if (response.data.redirect_url) {
+              router.push(response.data.redirect_url);
+            } else {
+              router.push('/store/storefront');
+            }
+          }, 5000);
         } else {
-          setStatus("error");
-          setMessage(response.data.message || "Payment verification failed. Please contact support.");
+          setVerificationStatus('error');
+          setMessage(response.data.message || 'Payment verification failed');
         }
       } catch (error: any) {
-        console.error("Payment verification error:", error);
-        
-        // Check if the error response contains success information
-        const errorData = error.response?.data as VerificationResponse | undefined;
-        
-        if (
-          errorData?.success === true || 
-          (errorData?.message && errorData.message.toLowerCase().includes("success"))
-        ) {
-          setStatus("success");
-          setMessage(errorData.message || "Payment successful!");
-          
-          // Clear payment reference
-          localStorage.removeItem("payment_reference");
-          
-          // Get redirect URL from response or use default
-          const redirectTo = errorData.redirect_url || "/store/storefront";
-          
-          // Redirect after 3 seconds
-          setTimeout(() => {
-            router.push(redirectTo);
-          }, 3000);
-        } else {
-          setStatus("error");
-          setMessage(
-            errorData?.message || 
-            error.response?.data?.error || 
-            "An error occurred during payment verification. Please contact support."
-          );
-        }
+        console.error('Verification error:', error);
+        setVerificationStatus('error');
+        setMessage(error.response?.data?.message || 'Payment verification failed. Please contact support.');
       }
     };
     
     verifyPayment();
-  }, [router.isReady, accessToken, router]);
+  }, [reference, router]);
   
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-gray-100 flex flex-col items-center justify-center py-12 px-4">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full text-center"
+    <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-b from-purple-50 to-white">
+      <motion.div 
+        className="w-full max-w-md bg-white rounded-2xl overflow-hidden shadow-lg"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ 
+          type: "spring", 
+          stiffness: 100, 
+          damping: 15 
+        }}
       >
-        {status === "loading" && (
-          <>
-            <div className="flex justify-center mb-6">
-              <motion.div
-                className="h-16 w-16 border-4 border-purple-600 border-t-transparent rounded-full"
-                animate={{ rotate: 360 }}
-                transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-              />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Verifying Payment</h2>
-            <p className="text-gray-600">Please wait while we verify your payment...</p>
-          </>
-        )}
+        <div className={`w-full h-2 ${
+          verificationStatus === 'loading' ? 'bg-purple-500' :
+          verificationStatus === 'success' ? 'bg-green-500' : 'bg-red-500'
+        }`}></div>
         
-        {status === "success" && (
-          <>
-            <div className="flex justify-center mb-6">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="h-16 w-16 bg-green-100 rounded-full flex items-center justify-center"
-              >
-                <svg className="h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-              </motion.div>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Successful!</h2>
-            <p className="text-gray-600 mb-4">{message}</p>
-            <div className="flex justify-center">
-              <motion.div
-                className="h-2 w-32 bg-gray-200 rounded-full overflow-hidden"
-              >
+        <div className="px-8 pt-10 pb-8">
+          <div className="flex flex-col items-center">
+            <motion.div 
+              className={`w-20 h-20 rounded-full flex items-center justify-center mb-6 ${
+                verificationStatus === 'loading' ? 'bg-purple-100' :
+                verificationStatus === 'success' ? 'bg-green-100' : 'bg-red-100'
+              }`}
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 200 }}
+            >
+              {verificationStatus === 'loading' && (
                 <motion.div
-                  className="h-full bg-purple-600"
-                  initial={{ width: 0 }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 3 }}
-                />
-              </motion.div>
-            </div>
-          </>
-        )}
-        
-        {status === "error" && (
-          <>
-            <div className="flex justify-center mb-6">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="h-16 w-16 bg-red-100 rounded-full flex items-center justify-center"
-              >
-                <svg className="h-10 w-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </motion.div>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Verification Failed</h2>
-            <p className="text-gray-600 mb-6">{message}</p>
-            <div className="flex justify-center space-x-4">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-5 py-2.5 bg-purple-600 text-white rounded-lg font-medium"
-                onClick={() => router.push("/plan/payment")}
-              >
-                Return to Plans
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg font-medium"
-                onClick={() => window.location.href = "mailto:support@zikor.shop"}
-              >
-                Contact Support
-              </motion.button>
-            </div>
-          </>
-        )}
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                >
+                  <BiLoader size={40} className="text-purple-600" />
+                </motion.div>
+              )}
+              
+              {verificationStatus === 'success' && (
+                <BiCheckCircle size={40} className="text-green-600" />
+              )}
+              
+              {verificationStatus === 'error' && (
+                <BiErrorCircle size={40} className="text-red-600" />
+              )}
+            </motion.div>
+            
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              {verificationStatus === 'loading' ? 'Verifying Payment' :
+               verificationStatus === 'success' ? 'Payment Successful!' : 'Payment Failed'}
+            </h2>
+            
+            <p className="text-gray-600 text-center mb-8">{message}</p>
+          </div>
+          
+          {subscription && (
+            <motion.div 
+              className="bg-gray-50 rounded-xl p-6 mb-8"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h3 className="font-medium text-gray-700 mb-4 text-center">Subscription Details</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Start Date</p>
+                  <p className="text-gray-800 font-medium">
+                    {new Date(subscription.start_date).toLocaleDateString(undefined, { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">End Date</p>
+                  <p className="text-gray-800 font-medium">
+                    {new Date(subscription.end_date).toLocaleDateString(undefined, { 
+                      year: 'numeric', 
+                      month: 'short', 
+                      day: 'numeric' 
+                    })}
+                  </p>
+                </div>
+                
+                <div className="col-span-2">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Billing Cycle</p>
+                  <p className="text-gray-800 font-medium">
+                    {subscription.billing_cycle === 'yearly' ? 'Annual' : 'Monthly'}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+          
+          {verificationStatus === 'success' && (
+            <motion.div 
+              className="flex items-center justify-center text-sm text-gray-500"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="flex items-center">
+                <div className="w-1 h-1 bg-gray-400 rounded-full mr-1"></div>
+                <span>Redirecting</span>
+                <motion.span
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
+                >...</motion.span>
+              </div>
+            </motion.div>
+          )}
+          
+          {verificationStatus === 'error' && (
+            <motion.button
+              className="w-full bg-purple-600 text-white py-3 rounded-xl font-medium transition-all"
+              whileHover={{ 
+                backgroundColor: "#7c3aed",
+                boxShadow: "0 4px 12px rgba(124, 58, 237, 0.3)" 
+              }}
+              whileTap={{ scale: 0.98 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              onClick={() => router.push('/plan/payment')}
+            >
+              Try Again
+            </motion.button>
+          )}
+        </div>
       </motion.div>
     </div>
   );
 };
 
-export default PaymentVerification;
+export default PaymentVerificationPage;

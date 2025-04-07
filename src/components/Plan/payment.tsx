@@ -6,7 +6,7 @@ import {
   BiCreditCard, BiSupport, BiPackage, 
   BiLock, BiWorld, BiCustomize,
   BiRocket, BiCalendar, BiX,
-  BiDollar, BiUser, BiGlobe, BiTag
+  BiDollar, BiUser, 
 } from "react-icons/bi";
 import apiClient from '../../apiClient';
 
