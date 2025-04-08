@@ -10,6 +10,7 @@ import {
 } from "react-icons/bi";
 import apiClient from '../../apiClient';
 
+
 interface PlanFeature {
   [key: string]: React.ReactNode;
 }
@@ -32,63 +33,17 @@ interface Plan {
     highlight?: boolean;
   }[];
   savingsPercentage?: number;
+  isFree?: boolean;
 }
 
 const PaymentPlansPage = () => {
   const router = useRouter();
+
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    const email = localStorage.getItem("userEmail"); 
-    setAccessToken(token);
-    setUserEmail(email);
-    
-    // Handle payment callback
-    const { payment, message, token: callbackToken } = router.query;
-    
-    if (payment === "success") {
-        if (callbackToken) {
-            // Store the new token from callback
-            localStorage.setItem("accessToken", callbackToken as string);
-        }
-        
-        setSuccessMessage("Payment successful! Your plan has been activated.");
-        setTimeout(() => {
-            setSuccessMessage("");
-            router.replace("/store/storefront", undefined, { shallow: true });
-        }, 5000);
-        
-        // Verify subscription was created
-        verifySubscription();
-        
-    } else if (payment === "failed" && typeof message === "string") {
-        setErrorMessage(decodeURIComponent(message));
-        setTimeout(() => setErrorMessage(""), 5000);
-    }
-}, [router.query]);
-
-const verifySubscription = async () => {
-    try {
-        const response = await apiClient.get('/subscription/', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem("accessToken")}`
-            }
-        });
-        
-        if (!response.data.has_subscription) {
-            setErrorMessage("Subscription not found - please contact support");
-        }
-    } catch (error) {
-        setErrorMessage("Failed to verify subscription");
-    }
-};
 
   const plans: Plan[] = [
     {
@@ -99,8 +54,9 @@ const verifySubscription = async () => {
         monthly: "₦0",
         yearly: "₦0"
       },
-      color: "#8B5CF6", // Changed to purple
+      color: "#8B5CF6",
       popular: false,
+      isFree: true,
       features: [
         { text: "Basic storefront", included: true },
         { text: "Up to 100 products", included: true },
@@ -126,8 +82,9 @@ const verifySubscription = async () => {
         yearly: "₦45,000"
       },
       period: billingCycle === "monthly" ? "/mo" : "/yr",
-      color: "#7C3AED", // Changed to darker purple
+      color: "#7C3AED",
       popular: true,
+      isFree: false,
       features: [
         { text: "Full-featured storefront", included: true, highlight: true },
         { text: "Unlimited Products", included: true, highlight: true },
@@ -154,8 +111,9 @@ const verifySubscription = async () => {
         yearly: "₦150,000"
       },
       period: billingCycle === "monthly" ? "/mo" : "/yr",
-      color: "#6D28D9", // Changed to deep purple
+      color: "#6D28D9",
       popular: false,
+      isFree: false,
       features: [
         { text: "Everything in Pro, plus:", included: true, highlight: true },
         { text: "Custom domain included", included: true, highlight: true },
@@ -211,65 +169,73 @@ const verifySubscription = async () => {
     return included ? <BiCheck className="text-purple-500" /> : <BiX className="text-gray-400" />;
   };
 
-  const continueToPayment = async (plan: Plan) => {
-    if (!accessToken || !userEmail) {
-      setErrorMessage("You need to be logged in to select a plan");
-      setTimeout(() => setErrorMessage(""), 5000);
+  const handlePlanSelect = (plan: Plan) => {
+    setSelectedPlan(plan);
+  };
+
+  const handlePaymentInitialization = async (plan: Plan) => {
+    // Fetch user email from localStorage
+    const userEmail = localStorage.getItem("userEmail");
+  
+    if (!userEmail) {
+      setErrorMessage("Please log in to subscribe to a plan");
       return;
     }
-    
-    setSelectedPlan(plan);
+  
     setProcessingPayment(true);
     setErrorMessage("");
-    
+    setSuccessMessage("");
+  
     try {
-      const response = await apiClient.post("/payment/initialize", {
-        plan_id: plan.id === 'pro' ? 2 : plan.id === 'business' ? 3 : 1,
-        billing_cycle: billingCycle,
+      const planIdMap: Record<string, number> = {
+        'starter': 1,
+        'pro': 2,
+        'business': 3
+      };
+  
+      const backendPlanId = planIdMap[plan.id];
+      
+      if (!backendPlanId) {
+        throw new Error('Invalid plan selected');
+      }
+  
+      const response = await apiClient.post('/payment/initialize', {
+        plan_id: backendPlanId,
         email: userEmail,
+        billing_cycle: billingCycle
       }, {
         headers: {
-          'Authorization': `Bearer ${accessToken}`
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
         }
       });
   
-      if (plan.id === "starter") {
-        setSuccessMessage("Free plan activated successfully!");
-        setTimeout(() => {
-          setSuccessMessage("");
-          router.push("/store/storefront");
-        }, 2000);
-      } else {
-        // Save payment reference in localStorage for potential verification needs
-        localStorage.setItem("payment_reference", response.data.reference);
-        
-        // Redirect to Paystack payment page
-        window.location.href = response.data.authorization_url;
+      if (plan.isFree) {
+        setSuccessMessage('Free plan activated successfully!');
+        router.push('/store/storefront');
+        return;
       }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        "An error occurred during payment processing";
-      
-      if (error.response?.data?.errors) {
-        const errorMessages = Object.values(error.response.data.errors)
-                                  .flat()
-                                  .join('\n');
-        setErrorMessage(errorMessages);
+  
+      if (response.data.authorization_url) {
+        // Check if it's an object with a url property (from your Postman response)
+        if (typeof response.data.authorization_url === 'object' && response.data.authorization_url.url) {
+          window.location.href = response.data.authorization_url.url;
+        } 
+        // Or if it's a direct string
+        else if (typeof response.data.authorization_url === 'string') {
+          window.location.href = response.data.authorization_url;
+        } else {
+          throw new Error('Invalid authorization URL format');
+        }
       } else {
-        setErrorMessage(errorMessage);
+        throw new Error('Payment initialization failed');
       }
       
-      setTimeout(() => setErrorMessage(""), 5000);
+      setErrorMessage('Payment initialization failed');
     } finally {
       setProcessingPayment(false);
     }
   };
-
-  const handlePlanSelect = (plan: Plan) => {
-    setSelectedPlan(plan);
-  };
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-gray-100 flex flex-col items-center py-12 px-4">
@@ -467,22 +433,20 @@ const verifySubscription = async () => {
                       ? 'opacity-70 cursor-not-allowed'
                       : ''
                   } ${
-                    plan.id === "starter" 
+                    plan.isFree 
                       ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
                       : 'bg-gradient-to-r text-white'
                   }`}
                   style={{
-                    backgroundImage: plan.id !== "starter" 
+                    backgroundImage: !plan.isFree 
                       ? `linear-gradient(to right, ${plan.color}, ${plan.color}dd)` 
                       : undefined
                   }}
                   whileHover={{ scale: processingPayment && selectedPlan?.id === plan.id ? 1 : 1.02 }}
                   whileTap={{ scale: processingPayment && selectedPlan?.id === plan.id ? 1 : 0.98 }}
                   onClick={(e) => {
-                    e.stopPropagation(); // Prevent triggering the parent onClick
-                    if (!processingPayment) {
-                      continueToPayment(plan);
-                    }
+                    e.stopPropagation();
+                    handlePaymentInitialization(plan);
                   }}
                   disabled={processingPayment}
                 >
@@ -497,7 +461,7 @@ const verifySubscription = async () => {
                     </div>
                   ) : (
                     <>
-                      {plan.id === "starter" ? "Start for Free" : `Choose ${plan.name} (${billingCycle})`}
+                      {plan.isFree ? "Start for Free" : `Choose ${plan.name} (${billingCycle})`}
                     </>
                   )}
                 </motion.button>
