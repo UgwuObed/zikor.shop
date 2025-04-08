@@ -99,7 +99,7 @@ const verifySubscription = async () => {
         monthly: "₦0",
         yearly: "₦0"
       },
-      color: "#8B5CF6", 
+      color: "#8B5CF6", // Changed to purple
       popular: false,
       features: [
         { text: "Basic storefront", included: true },
@@ -126,7 +126,7 @@ const verifySubscription = async () => {
         yearly: "₦45,000"
       },
       period: billingCycle === "monthly" ? "/mo" : "/yr",
-      color: "#7C3AED", 
+      color: "#7C3AED", // Changed to darker purple
       popular: true,
       features: [
         { text: "Full-featured storefront", included: true, highlight: true },
@@ -154,7 +154,7 @@ const verifySubscription = async () => {
         yearly: "₦150,000"
       },
       period: billingCycle === "monthly" ? "/mo" : "/yr",
-      color: "#6D28D9", 
+      color: "#6D28D9", // Changed to deep purple
       popular: false,
       features: [
         { text: "Everything in Pro, plus:", included: true, highlight: true },
@@ -240,10 +240,10 @@ const verifySubscription = async () => {
           router.push("/store/storefront");
         }, 2000);
       } else {
-        
+        // Save payment reference in localStorage for potential verification needs
         localStorage.setItem("payment_reference", response.data.reference);
         
-    
+        // Redirect to Paystack payment page
         window.location.href = response.data.authorization_url;
       }
     } catch (error: any) {
