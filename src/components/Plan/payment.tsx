@@ -6,7 +6,7 @@ import {
   BiCreditCard, BiSupport, BiPackage, 
   BiLock, BiWorld, BiCustomize,
   BiRocket, BiCalendar, BiX,
-  BiDollar, BiUser, 
+  BiDollar, BiUser, BiCheckCircle
 } from "react-icons/bi";
 import apiClient from '../../apiClient';
 
@@ -39,6 +39,7 @@ const PaymentPlansPage = () => {
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -48,7 +49,46 @@ const PaymentPlansPage = () => {
     const email = localStorage.getItem("userEmail"); 
     setAccessToken(token);
     setUserEmail(email);
-  }, []);
+    
+    // Handle payment callback
+    const { payment, message, token: callbackToken } = router.query;
+    
+    if (payment === "success") {
+        if (callbackToken) {
+            // Store the new token from callback
+            localStorage.setItem("accessToken", callbackToken as string);
+        }
+        
+        setSuccessMessage("Payment successful! Your plan has been activated.");
+        setTimeout(() => {
+            setSuccessMessage("");
+            router.replace("/store/storefront", undefined, { shallow: true });
+        }, 5000);
+        
+        // Verify subscription was created
+        verifySubscription();
+        
+    } else if (payment === "failed" && typeof message === "string") {
+        setErrorMessage(decodeURIComponent(message));
+        setTimeout(() => setErrorMessage(""), 5000);
+    }
+}, [router.query]);
+
+const verifySubscription = async () => {
+    try {
+        const response = await apiClient.get('/subscription/', {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem("accessToken")}`
+            }
+        });
+        
+        if (!response.data.has_subscription) {
+            setErrorMessage("Subscription not found - please contact support");
+        }
+    } catch (error) {
+        setErrorMessage("Failed to verify subscription");
+    }
+};
 
   const plans: Plan[] = [
     {
@@ -59,7 +99,7 @@ const PaymentPlansPage = () => {
         monthly: "₦0",
         yearly: "₦0"
       },
-      color: "#10B981", 
+      color: "#8B5CF6", 
       popular: false,
       features: [
         { text: "Basic storefront", included: true },
@@ -86,7 +126,7 @@ const PaymentPlansPage = () => {
         yearly: "₦45,000"
       },
       period: billingCycle === "monthly" ? "/mo" : "/yr",
-      color: "#FBBF24",
+      color: "#7C3AED", 
       popular: true,
       features: [
         { text: "Full-featured storefront", included: true, highlight: true },
@@ -114,7 +154,7 @@ const PaymentPlansPage = () => {
         yearly: "₦150,000"
       },
       period: billingCycle === "monthly" ? "/mo" : "/yr",
-      color: "#EF4444", 
+      color: "#6D28D9", 
       popular: false,
       features: [
         { text: "Everything in Pro, plus:", included: true, highlight: true },
@@ -142,24 +182,24 @@ const PaymentPlansPage = () => {
     
     const iconMap: PlanFeature = {
       "Basic storefront": <BiStore className="text-gray-600" />,
-      "Full-featured storefront": <BiStore className="text-green-500" />,
-      "Everything in Pro": <BiCheck className="text-green-600" />,
-      "Unlimited Products": <BiPackage className="text-green-500" />,
-      "Instagram product import": <BiMobile className="text-green-500" />,
-      "AI Business Assistant": <BiCustomize className="text-green-500" />,
-      "Sales channels": <BiMobile className="text-green-500" />,
-      "Inventory management": <BiPackage className="text-green-500" />,
-      "Custom domain": <BiWorld className="text-green-500" />,
-      "Real-time logistics": <BiPackage className="text-green-500" />,
+      "Full-featured storefront": <BiStore className="text-purple-500" />,
+      "Everything in Pro": <BiCheck className="text-purple-600" />,
+      "Unlimited Products": <BiPackage className="text-purple-500" />,
+      "Instagram product import": <BiMobile className="text-purple-500" />,
+      "AI Business Assistant": <BiCustomize className="text-purple-500" />,
+      "Sales channels": <BiMobile className="text-purple-500" />,
+      "Inventory management": <BiPackage className="text-purple-500" />,
+      "Custom domain": <BiWorld className="text-purple-500" />,
+      "Real-time logistics": <BiPackage className="text-purple-500" />,
       "Basic payment": <BiCreditCard className="text-gray-600" />,
-      "Marketing tools": <BiBarChart className="text-green-500" />,
-      "Auto-invoicing": <BiCreditCard className="text-green-500" />,
-      "Customer database": <BiUser className="text-green-500" />,
-      "Abandoned cart": <BiStore className="text-green-500" />,
-      "team members": <BiUser className="text-green-500" />,
-      "Priority": <BiSupport className="text-green-500" />,
-      "Dedicated account": <BiSupport className="text-green-500" />,
-      "Fast support": <BiSupport className="text-green-500" />,
+      "Marketing tools": <BiBarChart className="text-purple-500" />,
+      "Auto-invoicing": <BiCreditCard className="text-purple-500" />,
+      "Customer database": <BiUser className="text-purple-500" />,
+      "Abandoned cart": <BiStore className="text-purple-500" />,
+      "team members": <BiUser className="text-purple-500" />,
+      "Priority": <BiSupport className="text-purple-500" />,
+      "Dedicated account": <BiSupport className="text-purple-500" />,
+      "Fast support": <BiSupport className="text-purple-500" />,
     };
     
     for (const [key, icon] of Object.entries(iconMap)) {
@@ -168,11 +208,15 @@ const PaymentPlansPage = () => {
       }
     }
     
-    return included ? <BiCheck className="text-green-500" /> : <BiX className="text-gray-400" />;
+    return included ? <BiCheck className="text-purple-500" /> : <BiX className="text-gray-400" />;
   };
 
   const continueToPayment = async (plan: Plan) => {
-    if (!accessToken || !userEmail) return;
+    if (!accessToken || !userEmail) {
+      setErrorMessage("You need to be logged in to select a plan");
+      setTimeout(() => setErrorMessage(""), 5000);
+      return;
+    }
     
     setSelectedPlan(plan);
     setProcessingPayment(true);
@@ -190,10 +234,16 @@ const PaymentPlansPage = () => {
       });
   
       if (plan.id === "starter") {
-        router.push("/store/storefront");
+        setSuccessMessage("Free plan activated successfully!");
+        setTimeout(() => {
+          setSuccessMessage("");
+          router.push("/store/storefront");
+        }, 2000);
       } else {
+        
         localStorage.setItem("payment_reference", response.data.reference);
         
+    
         window.location.href = response.data.authorization_url;
       }
     } catch (error: any) {
@@ -217,13 +267,12 @@ const PaymentPlansPage = () => {
     }
   };
 
-  
   const handlePlanSelect = (plan: Plan) => {
     setSelectedPlan(plan);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-gray-100 flex flex-col items-center py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-gray-100 flex flex-col items-center py-12 px-4">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -275,14 +324,26 @@ const PaymentPlansPage = () => {
         </div>
       </motion.div>
       
-      {/* Display error message if there is one */}
+      {/* Display messages if there are any */}
       {errorMessage && (
         <motion.div 
-          className="w-full max-w-6xl mb-6 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded"
+          className="w-full max-w-6xl mb-6 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded flex items-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
+          <BiX className="text-red-600 text-xl mr-2" />
           {errorMessage}
+        </motion.div>
+      )}
+      
+      {successMessage && (
+        <motion.div 
+          className="w-full max-w-6xl mb-6 bg-green-100 border border-green-300 text-green-700 px-4 py-3 rounded flex items-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        >
+          <BiCheckCircle className="text-green-600 text-xl mr-2" />
+          {successMessage}
         </motion.div>
       )}
       
@@ -451,8 +512,9 @@ const PaymentPlansPage = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.6 }}
         >
-          <p className="text-gray-500 text-sm">
-            You can change your plan any time after creating your store
+          <p className="text-gray-500 text-sm flex items-center">
+            <BiLock className="mr-1 text-purple-500" />
+            Secure payments processed by Paystack. You can change your plan any time.
           </p>
         </motion.div>
       </div>
