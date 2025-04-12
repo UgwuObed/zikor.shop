@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
+import { v4 as uuidv4 } from 'uuid';
 import { 
   BiCheck, BiStore, BiMobile, BiBarChart, 
   BiCreditCard, BiSupport, BiPackage, 
@@ -9,6 +11,11 @@ import {
   BiDollar, BiUser, BiCheckCircle
 } from "react-icons/bi";
 import apiClient from '../../apiClient';
+
+const PaystackButton = dynamic(
+  () => import('react-paystack').then(mod => mod.PaystackButton),
+  { ssr: false }
+);
 
 interface PlanFeature {
   [key: string]: React.ReactNode;
@@ -19,8 +26,8 @@ interface Plan {
   name: string;
   description: string;
   price: {
-    monthly: string;
-    yearly: string;
+    monthly: number;
+    yearly: number;
   };
   period?: string;
   color: string;
@@ -40,54 +47,103 @@ const PaymentPlansPage = () => {
   const [processingPayment, setProcessingPayment] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [redirectProgress, setRedirectProgress] = useState(0);
+  const [showRedirectLoader, setShowRedirectLoader] = useState(false);
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isBrowser, setIsBrowser] = useState(false);
 
   useEffect(() => {
+    setIsBrowser(true);
     const token = localStorage.getItem("accessToken");
-    const email = localStorage.getItem("userEmail"); 
+    const email = localStorage.getItem("userEmail");
+    const id = localStorage.getItem("userId");
     setAccessToken(token);
     setUserEmail(email);
+    setUserId(id);
     
-    // Handle payment callback
-    const { payment, message, token: callbackToken } = router.query;
-    
-    if (payment === "success") {
-        if (callbackToken) {
-            // Store the new token from callback
-            localStorage.setItem("accessToken", callbackToken as string);
-        }
-        
-        setSuccessMessage("Payment successful! Your plan has been activated.");
-        setTimeout(() => {
-            setSuccessMessage("");
-            router.replace("/store/storefront", undefined, { shallow: true });
-        }, 5000);
-        
-        // Verify subscription was created
-        verifySubscription();
-        
-    } else if (payment === "failed" && typeof message === "string") {
-        setErrorMessage(decodeURIComponent(message));
-        setTimeout(() => setErrorMessage(""), 5000);
+    if (router.query.reference && router.query.transaction_id) {
+      verifyPaymentWithBackend(
+        router.query.reference as string,
+        router.query.transaction_id as string,
+        router.query.plan_id as string,
+        router.query.billing_cycle as "monthly" | "yearly"
+      );
     }
-}, [router.query]);
-
-const verifySubscription = async () => {
-    try {
-        const response = await apiClient.get('/api/subscription', {
-            headers: {
-                'Authorization': `Bearer ${localStorage.getItem("accessToken")}`
-            }
+  }, [router.query]);
+  
+  // Progress bar effect when redirecting
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (showRedirectLoader) {
+      interval = setInterval(() => {
+        setRedirectProgress(prev => {
+          const newProgress = prev + (100 - prev) / 15;
+          return newProgress > 99 ? 99 : newProgress;
         });
-        
-        if (!response.data.has_subscription) {
-            setErrorMessage("Subscription not found - please contact support");
-        }
-    } catch (error) {
-        setErrorMessage("Failed to verify subscription");
+      }, 100);
     }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [showRedirectLoader]);
+
+  const PLAN_ID_MAPPING = {
+    starter: 1,
+    pro: 2,
+    business: 3
+  };
+
+const verifyPaymentWithBackend = async (
+  reference: string,
+  transactionId: string,
+  planId: string, 
+  billingCycle: "monthly" | "yearly"
+) => {
+  setProcessingPayment(true);
+  
+  try {
+    const databasePlanId = PLAN_ID_MAPPING[planId as keyof typeof PLAN_ID_MAPPING];
+    
+    const selectedPlan = plans.find(p => p.id === planId);
+    if (!selectedPlan) {
+      throw new Error("Selected plan not found");
+    }
+    
+    const amount = billingCycle === "yearly" 
+      ? selectedPlan.price.yearly 
+      : selectedPlan.price.monthly;
+
+    const response = await apiClient.post('/subscription/verify-payment', {
+      reference,
+      transaction_id: transactionId,
+      plan_id: databasePlanId,
+      billing_cycle: billingCycle,
+      amount: amount
+    }, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+
+    if (response.data.success) {
+      setShowRedirectLoader(true);
+      localStorage.setItem("accessToken", response.data.token);
+      setTimeout(() => {
+        router.push("/store/storefront");
+      }, 3000);
+    } else {
+      setErrorMessage(response.data.message || "Payment verification failed");
+    }
+  } catch (error: any) {
+    setErrorMessage(error.response?.data?.message || "Error verifying payment");
+  } finally {
+    setProcessingPayment(false);
+  }
 };
 
   const plans: Plan[] = [
@@ -96,10 +152,10 @@ const verifySubscription = async () => {
       name: "Starter",
       description: "For new businesses just getting started",
       price: {
-        monthly: "₦0",
-        yearly: "₦0"
+        monthly: 0,
+        yearly: 0
       },
-      color: "#8B5CF6", // Changed to purple
+      color: "#8B5CF6",
       popular: false,
       features: [
         { text: "Basic storefront", included: true },
@@ -122,11 +178,11 @@ const verifySubscription = async () => {
       name: "Pro",
       description: "For growing businesses ready to scale",
       price: {
-        monthly: "₦4,500",
-        yearly: "₦45,000"
+        monthly: 4500,
+        yearly: 45000
       },
       period: billingCycle === "monthly" ? "/mo" : "/yr",
-      color: "#7C3AED", // Changed to darker purple
+      color: "#7C3AED",
       popular: true,
       features: [
         { text: "Full-featured storefront", included: true, highlight: true },
@@ -150,11 +206,11 @@ const verifySubscription = async () => {
       name: "Business",
       description: "For established businesses seeking growth",
       price: {
-        monthly: "₦15,000",
-        yearly: "₦150,000"
+        monthly: 15000,
+        yearly: 150000
       },
       period: billingCycle === "monthly" ? "/mo" : "/yr",
-      color: "#6D28D9", // Changed to deep purple
+      color: "#6D28D9",
       popular: false,
       features: [
         { text: "Everything in Pro, plus:", included: true, highlight: true },
@@ -174,6 +230,91 @@ const verifySubscription = async () => {
       icon: <BiRocket className="w-6 h-6" />
     }
   ];
+
+  const initializePayment = (plan: Plan) => {
+    if (!isBrowser) return;
+    
+    const amount = billingCycle === "yearly" ? plan.price.yearly : plan.price.monthly;
+    
+    const script = document.createElement('script');
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.async = true;
+    
+    script.onload = () => {
+      const paystack = window.PaystackPop.setup({
+        key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
+        email: userEmail || '',
+        amount: amount * 100, 
+        currency: 'NGN',
+        ref: `zik_${uuidv4()}`,
+        metadata: {
+          plan_id: plan.id,
+          billing_cycle: billingCycle,
+          user_id: userId,
+          custom_fields: []
+        },
+        callback: function(response: any) {
+          router.push({
+            pathname: router.pathname,
+            query: {
+              ...router.query,
+              reference: response.reference,
+              transaction_id: response.transaction,
+              plan_id: plan.id,
+              billing_cycle: billingCycle,
+            },
+          }, undefined, { shallow: true });
+        },
+        onClose: function() {
+          setProcessingPayment(false);
+        }
+      });
+      
+      paystack.openIframe();
+    };
+    
+    document.body.appendChild(script);
+  };
+  
+  const continueToPayment = async (plan: Plan) => {
+    if (!accessToken || !userEmail) {
+      setErrorMessage("You need to be logged in to select a plan");
+      setTimeout(() => setErrorMessage(""), 5000);
+      return;
+    }
+    
+    setSelectedPlan(plan);
+    setProcessingPayment(true);
+    setErrorMessage("");
+    
+    try {
+      if (plan.id === "starter") {
+        const response = await apiClient.post("/subscription/create-free", {
+          plan_id: plan.id,
+        }, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+
+        setShowRedirectLoader(true);
+        setTimeout(() => {
+          router.push("/store/storefront");
+        }, 2000);
+      } else {
+        initializePayment(plan);
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || 
+                        "An error occurred during payment processing";
+      setErrorMessage(errorMessage);
+      setTimeout(() => setErrorMessage(""), 5000);
+    } finally {
+      if (plan.id === "starter") {
+        setProcessingPayment(false);
+      }
+    }
+  };
 
   const getFeatureIcon = (feature: string, included: boolean): React.ReactElement => {
     if (!included) {
@@ -209,62 +350,6 @@ const verifySubscription = async () => {
     }
     
     return included ? <BiCheck className="text-purple-500" /> : <BiX className="text-gray-400" />;
-  };
-
-  const continueToPayment = async (plan: Plan) => {
-    if (!accessToken || !userEmail) {
-      setErrorMessage("You need to be logged in to select a plan");
-      setTimeout(() => setErrorMessage(""), 5000);
-      return;
-    }
-    
-    setSelectedPlan(plan);
-    setProcessingPayment(true);
-    setErrorMessage("");
-    
-    try {
-      const response = await apiClient.post("/payment/initialize", {
-        plan_id: plan.id === 'pro' ? 2 : plan.id === 'business' ? 3 : 1,
-        billing_cycle: billingCycle,
-        email: userEmail,
-      }, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
-        }
-      });
-  
-      if (plan.id === "starter") {
-        setSuccessMessage("Free plan activated successfully!");
-        setTimeout(() => {
-          setSuccessMessage("");
-          router.push("/store/storefront");
-        }, 2000);
-      } else {
-        // Save payment reference in localStorage for potential verification needs
-        localStorage.setItem("payment_reference", response.data.reference);
-        
-        // Redirect to Paystack payment page
-        window.location.href = response.data.authorization_url;
-      }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || 
-                        error.response?.data?.error || 
-                        error.message || 
-                        "An error occurred during payment processing";
-      
-      if (error.response?.data?.errors) {
-        const errorMessages = Object.values(error.response.data.errors)
-                                  .flat()
-                                  .join('\n');
-        setErrorMessage(errorMessages);
-      } else {
-        setErrorMessage(errorMessage);
-      }
-      
-      setTimeout(() => setErrorMessage(""), 5000);
-    } finally {
-      setProcessingPayment(false);
-    }
   };
 
   const handlePlanSelect = (plan: Plan) => {
@@ -324,8 +409,91 @@ const verifySubscription = async () => {
         </div>
       </motion.div>
       
-      {/* Display messages if there are any */}
-      {errorMessage && (
+      {/* Fancy Redirect Loader */}
+      {showRedirectLoader && (
+        <motion.div 
+          className="w-full max-w-6xl mb-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <div className="bg-white border border-purple-200 shadow-lg rounded-lg p-6 flex flex-col items-center">
+            <motion.div 
+              className="w-24 h-24 mb-4 relative"
+              animate={{ 
+                rotate: 360
+              }}
+              transition={{ 
+                duration: 2,
+                repeat: Infinity,
+                ease: "linear"
+              }}
+            >
+              <svg className="w-full h-full" viewBox="0 0 100 100">
+                <circle 
+                  cx="50" 
+                  cy="50" 
+                  r="40" 
+                  stroke="#F3F4F6" 
+                  strokeWidth="8" 
+                  fill="none" 
+                />
+                <motion.circle 
+                  cx="50" 
+                  cy="50" 
+                  r="40" 
+                  stroke="#7C3AED" 
+                  strokeWidth="8" 
+                  fill="none" 
+                  strokeLinecap="round"
+                  strokeDasharray="251.2"
+                  strokeDashoffset="251.2"
+                  animate={{ 
+                    strokeDashoffset: [251.2, 0]
+                  }}
+                  transition={{ 
+                    duration: 2, 
+                    repeat: Infinity,
+                    ease: "easeInOut" 
+                  }}
+                />
+              </svg>
+              <motion.div 
+                className="absolute inset-0 flex items-center justify-center"
+                animate={{ 
+                  scale: [0.8, 1, 0.8]
+                }}
+                transition={{ 
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                <BiCheckCircle className="text-purple-600 text-3xl" />
+              </motion.div>
+            </motion.div>
+            
+            <h3 className="text-xl font-bold text-gray-800 mb-2">Payment Successful!</h3>
+            <p className="text-gray-600 text-center mb-4">Your plan is now active. Redirecting to your store...</p>
+            
+            <div className="w-full max-w-md bg-gray-200 rounded-full h-2.5 mb-1 overflow-hidden">
+              <motion.div 
+                className="h-full rounded-full bg-gradient-to-r from-purple-500 to-purple-700"
+                style={{ width: `${redirectProgress}%` }}
+                initial={{ width: "0%" }}
+                animate={{ width: `${redirectProgress}%` }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+            <div className="w-full max-w-md flex justify-end">
+              <span className="text-xs text-gray-500">{Math.round(redirectProgress)}%</span>
+            </div>
+          </div>
+        </motion.div>
+      )}
+      
+      {/* Display error message if there is one */}
+      {errorMessage && !showRedirectLoader && (
         <motion.div 
           className="w-full max-w-6xl mb-6 bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded flex items-center"
           initial={{ opacity: 0 }}
@@ -336,190 +504,183 @@ const verifySubscription = async () => {
         </motion.div>
       )}
       
-      {successMessage && (
-        <motion.div 
-          className="w-full max-w-6xl mb-6 bg-green-100 border border-green-300 text-green-700 px-4 py-3 rounded flex items-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <BiCheckCircle className="text-green-600 text-xl mr-2" />
-          {successMessage}
-        </motion.div>
-      )}
-      
       {/* Plans Container */}
-      <div className="w-full max-w-6xl">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {plans.map((plan, index) => (
-            <motion.div
-              key={plan.id}
-              className={`relative rounded-xl border-2 bg-white transition-all duration-300 overflow-hidden h-full flex flex-col ${
-                selectedPlan?.id === plan.id 
-                  ? `ring-2 ring-opacity-50 shadow-lg transform scale-[1.02]` 
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 * (index + 1) }}
-              onClick={() => handlePlanSelect(plan)}
-              whileHover={{ 
-                y: -5,
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
-              }}
-              style={{ 
-                borderColor: selectedPlan?.id === plan.id ? plan.color : undefined,
-                boxShadow: selectedPlan?.id === plan.id ? `0 8px 25px -5px ${plan.color}30` : undefined
-              }}
-            >
-              {plan.popular && (
-                <div 
-                  className="absolute top-0 right-0 bg-gradient-to-r from-purple-600 to-purple-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg"
-                  style={{ borderTopRightRadius: '0.5rem' }}
-                >
-                  MOST POPULAR
-                </div>
-              )}
-              
-              <div 
-                className="h-2 w-full"
-                style={{ backgroundColor: plan.color }}
-              />
-              
-              <div className="p-6 flex-1 flex flex-col">
-                <div className="flex justify-between items-center mb-2">
-                  <div className="flex items-center">
-                    <div 
-                      className="rounded-full p-2 mr-3"
-                      style={{ backgroundColor: `${plan.color}20` }}
-                    >
-                      {plan.icon}
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-800">{plan.name}</h3>
-                  </div>
-                  
+      {!showRedirectLoader && (
+        <div className="w-full max-w-6xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {plans.map((plan, index) => (
+              <motion.div
+                key={plan.id}
+                className={`relative rounded-xl border-2 bg-white transition-all duration-300 overflow-hidden h-full flex flex-col ${
+                  selectedPlan?.id === plan.id 
+                    ? `ring-2 ring-opacity-50 shadow-lg transform scale-[1.02]` 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 * (index + 1) }}
+                onClick={() => handlePlanSelect(plan)}
+                whileHover={{ 
+                  y: -5,
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+                }}
+                style={{ 
+                  borderColor: selectedPlan?.id === plan.id ? plan.color : undefined,
+                  boxShadow: selectedPlan?.id === plan.id ? `0 8px 25px -5px ${plan.color}30` : undefined
+                }}
+              >
+                {plan.popular && (
                   <div 
-                    className="h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors"
-                    style={{ 
-                      borderColor: selectedPlan?.id === plan.id ? plan.color : '#D1D5DB',
-                      backgroundColor: selectedPlan?.id === plan.id ? plan.color : 'white'
-                    }}
+                    className="absolute top-0 right-0 bg-gradient-to-r from-purple-600 to-purple-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg"
+                    style={{ borderTopRightRadius: '0.5rem' }}
                   >
-                    {selectedPlan?.id === plan.id && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="bg-white rounded-full h-2 w-2"
-                      />
+                    MOST POPULAR
+                  </div>
+                )}
+                
+                <div 
+                  className="h-2 w-full"
+                  style={{ backgroundColor: plan.color }}
+                />
+                
+                <div className="p-6 flex-1 flex flex-col">
+                  <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center">
+                      <div 
+                        className="rounded-full p-2 mr-3"
+                        style={{ backgroundColor: `${plan.color}20` }}
+                      >
+                        {plan.icon}
+                      </div>
+                      <h3 className="text-xl font-bold text-gray-800">{plan.name}</h3>
+                    </div>
+                    
+                    <div 
+                      className="h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors"
+                      style={{ 
+                        borderColor: selectedPlan?.id === plan.id ? plan.color : '#D1D5DB',
+                        backgroundColor: selectedPlan?.id === plan.id ? plan.color : 'white'
+                      }}
+                    >
+                      {selectedPlan?.id === plan.id && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="bg-white rounded-full h-2 w-2"
+                        />
+                      )}
+                    </div>
+                  </div>
+                  
+                  <p className="text-gray-600 text-sm mb-4">{plan.description}</p>
+                  
+                  <div className="mb-6">
+                    <motion.div
+                      key={`${plan.id}-${billingCycle}`}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="flex items-end"
+                    >
+                      <span className="text-3xl font-bold text-gray-900">
+                        ₦{(billingCycle === "yearly" ? plan.price.yearly : plan.price.monthly).toLocaleString()}
+                      </span>
+                      {plan.period && (
+                        <span className="text-gray-500 text-sm ml-1 mb-1">{plan.period}</span>
+                      )}
+                    </motion.div>
+                    
+                    {billingCycle === "yearly" && plan.savingsPercentage && (
+                      <motion.p 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="text-green-600 text-sm mt-1 font-medium"
+                      >
+                        Save {plan.savingsPercentage}% with annual billing
+                      </motion.p>
                     )}
                   </div>
-                </div>
-                
-                <p className="text-gray-600 text-sm mb-4">{plan.description}</p>
-                
-                <div className="mb-6">
-                  <motion.div
-                    key={`${plan.id}-${billingCycle}`}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-end"
-                  >
-                    <span className="text-3xl font-bold text-gray-900">
-                      {plan.price[billingCycle]}
-                    </span>
-                    {plan.period && (
-                      <span className="text-gray-500 text-sm ml-1 mb-1">{plan.period}</span>
-                    )}
-                  </motion.div>
                   
-                  {billingCycle === "yearly" && plan.savingsPercentage && (
-                    <motion.p 
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="text-green-600 text-sm mt-1 font-medium"
-                    >
-                      Save {plan.savingsPercentage}% with annual billing
-                    </motion.p>
-                  )}
-                </div>
-                
-                <div className="space-y-3 flex-1">
-                  {plan.features.map((feature, idx) => (
-                    <motion.div 
-                      key={idx}
-                      className={`flex items-center ${
-                        feature.included ? 'text-gray-700' : 'text-gray-400'
-                      } ${feature.highlight ? 'font-medium' : ''}`}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 + (0.05 * idx) }}
-                    >
-                      <div className="mr-2 flex-shrink-0">
-                        {getFeatureIcon(feature.text, feature.included)}
+                  <div className="space-y-3 flex-1">
+                    {plan.features.map((feature, idx) => (
+                      <motion.div 
+                        key={idx}
+                        className={`flex items-center ${
+                          feature.included ? 'text-gray-700' : 'text-gray-400'
+                        } ${feature.highlight ? 'font-medium' : ''}`}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 + (0.05 * idx) }}
+                      >
+                        <div className="mr-2 flex-shrink-0">
+                          {getFeatureIcon(feature.text, feature.included)}
+                        </div>
+                        <span className="text-sm">{feature.text}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                  
+                  <motion.button 
+                    className={`mt-6 w-full py-3 rounded-lg font-medium transition-all duration-300 ${
+                      processingPayment && selectedPlan?.id === plan.id
+                        ? 'opacity-70 cursor-not-allowed'
+                        : ''
+                    } ${
+                      plan.id === "starter" 
+                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
+                        : 'bg-gradient-to-r text-white'
+                    }`}
+                    style={{
+                      backgroundImage: plan.id !== "starter" 
+                        ? `linear-gradient(to right, ${plan.color}, ${plan.color}dd)` 
+                        : undefined
+                    }}
+                    whileHover={{ scale: processingPayment && selectedPlan?.id === plan.id ? 1 : 1.02 }}
+                    whileTap={{ scale: processingPayment && selectedPlan?.id === plan.id ? 1 : 0.98 }}
+                    onClick={(e) => {
+                      e.stopPropagation(); 
+                      if (!processingPayment) {
+                        continueToPayment(plan);
+                      }
+                    }}
+                    disabled={processingPayment}
+                  >
+                    {processingPayment && selectedPlan?.id === plan.id ? (
+                      <div className="flex items-center justify-center">
+                        <motion.div
+                          className="h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"
+                          animate={{ rotate: 360 }}
+                          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                        />
+                        Processing...
                       </div>
-                      <span className="text-sm">{feature.text}</span>
-                    </motion.div>
-                  ))}
+                    ) : (
+                      <>
+                        {plan.id === "starter" ? "Start for Free" : `Choose ${plan.name} (${billingCycle})`}
+                      </>
+                    )}
+                  </motion.button>
                 </div>
-                
-                <motion.button 
-                  className={`mt-6 w-full py-3 rounded-lg font-medium transition-all duration-300 ${
-                    processingPayment && selectedPlan?.id === plan.id
-                      ? 'opacity-70 cursor-not-allowed'
-                      : ''
-                  } ${
-                    plan.id === "starter" 
-                      ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
-                      : 'bg-gradient-to-r text-white'
-                  }`}
-                  style={{
-                    backgroundImage: plan.id !== "starter" 
-                      ? `linear-gradient(to right, ${plan.color}, ${plan.color}dd)` 
-                      : undefined
-                  }}
-                  whileHover={{ scale: processingPayment && selectedPlan?.id === plan.id ? 1 : 1.02 }}
-                  whileTap={{ scale: processingPayment && selectedPlan?.id === plan.id ? 1 : 0.98 }}
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent triggering the parent onClick
-                    if (!processingPayment) {
-                      continueToPayment(plan);
-                    }
-                  }}
-                  disabled={processingPayment}
-                >
-                  {processingPayment && selectedPlan?.id === plan.id ? (
-                    <div className="flex items-center justify-center">
-                      <motion.div
-                        className="h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"
-                        animate={{ rotate: 360 }}
-                        transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                      />
-                      Processing...
-                    </div>
-                  ) : (
-                    <>
-                      {plan.id === "starter" ? "Start for Free" : `Choose ${plan.name} (${billingCycle})`}
-                    </>
-                  )}
-                </motion.button>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            ))}
+          </div>
+          
+          <motion.div 
+            className="mt-8 flex flex-col items-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.6 }}
+          >
+            <p className="text-gray-500 text-sm flex items-center">
+              <BiLock className="mr-1 text-purple-500" />
+              Secure payments processed by Paystack. You can change your plan any time.
+            </p>
+          </motion.div>
         </div>
-        
-        <motion.div 
-          className="mt-8 flex flex-col items-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        >
-          <p className="text-gray-500 text-sm flex items-center">
-            <BiLock className="mr-1 text-purple-500" />
-            Secure payments processed by Paystack. You can change your plan any time.
-          </p>
-        </motion.div>
-      </div>
+      )}
     </div>
   );
 };
 
-export default PaymentPlansPage;
+export default dynamic(() => Promise.resolve(PaymentPlansPage), {
+  ssr: false
+});
