@@ -1,6 +1,6 @@
-import Dashboard from "../../pages/dashboard/index";
+import Dashboard from "../../components/Dashboard/index";
 import "../../app/globals.css";
 
-export default function SignupPage() {
+export default function DashboardPage() {
   return <Dashboard />;
 }

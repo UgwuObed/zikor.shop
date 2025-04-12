@@ -18,7 +18,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const [unreadNotifications, setUnreadNotifications] = useState(3);
   const router = useRouter();
 
-  // Close mobile sidebar when route changes
+
   useEffect(() => {
     const handleRouteChange = () => {
       setMobileSidebarOpen(false);
