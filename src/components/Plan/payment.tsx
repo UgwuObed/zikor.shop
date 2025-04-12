@@ -118,7 +118,7 @@ const verifyPaymentWithBackend = async (
       ? selectedPlan.price.yearly 
       : selectedPlan.price.monthly;
 
-    const response = await apiClient.post('/subscription/verify-payment', {
+    const response = await apiClient.post('/verify-payment', {
       reference,
       transaction_id: transactionId,
       plan_id: databasePlanId,
@@ -289,7 +289,7 @@ const verifyPaymentWithBackend = async (
     
     try {
       if (plan.id === "starter") {
-        const response = await apiClient.post("/subscription/create-free", {
+        const response = await apiClient.post("/create-free", {
           plan_id: plan.id,
         }, {
           headers: {
