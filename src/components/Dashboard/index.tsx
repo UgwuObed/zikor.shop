@@ -16,14 +16,13 @@ import RecentOrders from '../../components/Dashboard/recentOrders';
 import ActivityFeed from '../../components/Dashboard/activityFeed';
 
 const Dashboard = () => {
-  // State for layout
+
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [unreadNotifications, setUnreadNotifications] = useState(3);
   const router = useRouter();
 
-  // Close mobile sidebar when route changes
   useEffect(() => {
     const handleRouteChange = () => {
       setMobileMenuOpen(false);
@@ -35,7 +34,6 @@ const Dashboard = () => {
     };
   }, []);
 
-  // Handle window resize to reset mobile menu
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 1024) {
@@ -116,7 +114,6 @@ const Dashboard = () => {
     setActiveSubmenu(activeSubmenu === name ? null : name);
   };
 
-  // Dashboard content data
   const stats = [
     { title: "Total Revenue", value: "₦1,245,890", change: "+12.5%", icon: FiDollarSign, color: "purple" },
     { title: "Total Orders", value: "1,845", change: "+8.2%", icon: BsCartCheck, color: "blue" },
