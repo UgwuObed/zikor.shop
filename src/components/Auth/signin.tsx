@@ -42,7 +42,7 @@ const Signin = () => {
     try {
       const response = apiClient.post("/login", formData);
       localStorage.setItem("accessToken", (await response).data.token);
-      router.push("/dashboard");
+      router.push("/dashboard/dashboard");
     } catch (error: any) {
     
       const errorMessage = error.response?.data?.message || 
