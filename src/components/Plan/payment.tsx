@@ -74,7 +74,6 @@ const PaymentPlansPage = () => {
     }
   }, [router.query]);
   
-  // Progress bar effect when redirecting
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
@@ -132,7 +131,7 @@ const verifyPaymentWithBackend = async (
 
     if (response.data.success) {
       setShowRedirectLoader(true);
-      localStorage.setItem("accessToken", response.data.token);
+      // localStorage.setItem("accessToken", response.data.token);
       setTimeout(() => {
         router.push("/store/storefront");
       }, 3000);
