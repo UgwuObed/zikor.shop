@@ -34,7 +34,6 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
   const [formValid, setFormValid] = useState<boolean>(false);
   const [slugDebounceTimeout, setSlugDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
 
-  // Auto-populate business name from storage if available
   useEffect(() => {
     if (businessInfoFromStorage && formData.business_name === '') {
       handleChange({
@@ -44,7 +43,6 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
         }
       } as React.ChangeEvent<HTMLInputElement>);
 
-      // Also generate a default slug from the business name
       const defaultSlug = businessInfoFromStorage
         .toLowerCase()
         .replace(/[^a-z0-9\s-]/g, '')
@@ -59,7 +57,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
     }
   }, [businessInfoFromStorage]);
 
-  // Validate form fields
+
   useEffect(() => {
     setFormValid(
       formData.business_name.trim() !== '' && 
@@ -68,7 +66,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
     );
   }, [formData.business_name, formData.slug, slugAvailable]);
   
-  // Handle slug change with debounce to prevent too many API calls
+
   const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const slug = e.target.value;
     handleChange(e);
@@ -88,7 +86,7 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
     }
   };
 
-  // Auto-generate slug from business name if slug is empty
+
   const handleBusinessNameWithSlug = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleBusinessNameChange(e);
     
@@ -107,7 +105,6 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
     }
   };
 
-  // Handle logo removal
   const handleRemoveLogo = () => {
     handleChange({
         target: {
@@ -124,7 +121,6 @@ const BasicInfoStep: React.FC<BasicInfoStepProps> = ({
     } as unknown as React.ChangeEvent<HTMLInputElement>);
   };
 
-  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
