@@ -1,31 +1,35 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingCart, Heart, ChevronLeft, ChevronRight, Check, Info } from 'lucide-react';
+"use client"
+
+import type React from "react"
+
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { X, ShoppingCart, Heart, ChevronLeft, ChevronRight, Check, Info } from "lucide-react"
 
 interface Product {
-  id: number;
-  name: string;
-  description: string;
-  main_price: string;
-  discount_price: string;
-  quantity: number;
-  image_urls: string[];
+  id: number
+  name: string
+  description: string
+  main_price: string
+  discount_price: string
+  quantity: number
+  image_urls: string[]
   category: {
-    name: string;
-  };
-  rating?: number;
-  features?: string[];
-  specifications?: Record<string, string>;
-  is_featured?: boolean;
-  is_new?: boolean;
+    name: string
+  }
+  rating?: number
+  features?: string[]
+  specifications?: Record<string, string>
+  is_featured?: boolean
+  is_new?: boolean
 }
 
 interface ProductDetailModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  product: Product | null;
-  onAddToCart: (productId: number, quantity: number) => void;
-  themeColor: string;
+  isOpen: boolean
+  onClose: () => void
+  product: Product | null
+  onAddToCart: (productId: number, quantity: number) => void
+  themeColor: string
 }
 
 const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
@@ -33,63 +37,61 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
   onClose,
   product,
   onAddToCart,
-  themeColor
+  themeColor,
 }) => {
-  const [quantity, setQuantity] = useState(1);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [activeTab, setActiveTab] = useState<'description' | 'specifications'>('description');
-  const [isFavorite, setIsFavorite] = useState(false);
-  
+  const [quantity, setQuantity] = useState(1)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [activeTab, setActiveTab] = useState<"description" | "specifications">("description")
+  const [isFavorite, setIsFavorite] = useState(false)
+
   useEffect(() => {
     if (product) {
-      setQuantity(1);
-      setCurrentImageIndex(0);
-      setActiveTab('description');
+      setQuantity(1)
+      setCurrentImageIndex(0)
+      setActiveTab("description")
     }
-  }, [product]);
-  
-  if (!product) return null;
+  }, [product])
 
-  const hasDiscount = Number(product.main_price) > Number(product.discount_price);
+  if (!product) return null
+
+  const hasDiscount = product.discount_price && Number(product.main_price) > Number(product.discount_price)
   const discountPercentage = hasDiscount
     ? Math.round(((Number(product.main_price) - Number(product.discount_price)) / Number(product.main_price)) * 100)
-    : 0;
-  
-  const isInStock = product.quantity > 0;
-  const hasMultipleImages = product.image_urls && product.image_urls.length > 1;
-  
+    : 0
+
+  const isInStock = product.quantity > 0
+  const hasMultipleImages = product.image_urls && product.image_urls.length > 1
+
   const handleIncrement = () => {
     if (quantity < product.quantity) {
-      setQuantity(prev => prev + 1);
+      setQuantity((prev) => prev + 1)
     }
-  };
-  
+  }
+
   const handleDecrement = () => {
     if (quantity > 1) {
-      setQuantity(prev => prev - 1);
+      setQuantity((prev) => prev - 1)
     }
-  };
-  
+  }
+
   const handleAddToCart = () => {
-    onAddToCart(product.id, quantity);
-    onClose();
-  };
-  
+    onAddToCart(product.id, quantity)
+    onClose()
+  }
+
   const nextImage = () => {
-    if (!product.image_urls || product.image_urls.length <= 1) return;
-    setCurrentImageIndex((prev) => (prev + 1) % product.image_urls.length);
-  };
-  
+    if (!product.image_urls || product.image_urls.length <= 1) return
+    setCurrentImageIndex((prev) => (prev + 1) % product.image_urls.length)
+  }
+
   const prevImage = () => {
-    if (!product.image_urls || product.image_urls.length <= 1) return;
-    setCurrentImageIndex((prev) => 
-      prev === 0 ? product.image_urls.length - 1 : prev - 1
-    );
-  };
-  
+    if (!product.image_urls || product.image_urls.length <= 1) return
+    setCurrentImageIndex((prev) => (prev === 0 ? product.image_urls.length - 1 : prev - 1))
+  }
+
   const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-  };
+    setIsFavorite(!isFavorite)
+  }
 
   return (
     <AnimatePresence>
@@ -103,7 +105,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             className="fixed inset-0 bg-black"
             onClick={onClose}
           />
-          
+
           {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -118,7 +120,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
             >
               <X size={20} />
             </button>
-            
+
             <div className="overflow-y-auto flex-1">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
                 {/* Product Images */}
@@ -127,7 +129,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   <div className="bg-gray-100 rounded-lg h-64 sm:h-80 overflow-hidden mb-4">
                     {product.image_urls && product.image_urls.length > 0 ? (
                       <img
-                        src={product.image_urls[currentImageIndex]}
+                        src={product.image_urls[currentImageIndex] || "/placeholder.svg"}
                         alt={product.name}
                         className="w-full h-full object-contain"
                       />
@@ -136,7 +138,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         <span className="text-gray-400">No image available</span>
                       </div>
                     )}
-                    
+
                     {/* Navigation Arrows */}
                     {hasMultipleImages && (
                       <>
@@ -154,37 +156,35 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         </button>
                       </>
                     )}
-                    
+
                     {/* Product Tags */}
                     <div className="absolute top-2 left-2 flex space-x-2">
                       {hasDiscount && (
-                        <span 
+                        <span
                           className="text-xs font-medium px-2 py-0.5 rounded text-white"
-                          style={{ backgroundColor: '#e53e3e' }}
+                          style={{ backgroundColor: "#e53e3e" }}
                         >
                           {discountPercentage}% OFF
                         </span>
                       )}
-                      
+
                       {product.is_new && (
-                        <span 
+                        <span
                           className="text-xs font-medium px-2 py-0.5 rounded text-white"
                           style={{ backgroundColor: themeColor }}
                         >
                           NEW
                         </span>
                       )}
-                      
+
                       {!isInStock && (
-                        <span 
-                          className="text-xs font-medium px-2 py-0.5 rounded bg-gray-500 text-white"
-                        >
+                        <span className="text-xs font-medium px-2 py-0.5 rounded bg-gray-500 text-white">
                           OUT OF STOCK
                         </span>
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Thumbnail Images */}
                   {hasMultipleImages && (
                     <div className="flex space-x-2 overflow-x-auto pb-2">
@@ -193,14 +193,14 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                           key={index}
                           onClick={() => setCurrentImageIndex(index)}
                           className={`w-16 h-16 rounded-md overflow-hidden flex-shrink-0 border-2 ${
-                            currentImageIndex === index ? 'border-blue-500' : 'border-transparent'
+                            currentImageIndex === index ? "border-blue-500" : "border-transparent"
                           }`}
-                          style={{ 
-                            borderColor: currentImageIndex === index ? themeColor : 'transparent'
+                          style={{
+                            borderColor: currentImageIndex === index ? themeColor : "transparent",
                           }}
                         >
                           <img
-                            src={imageUrl}
+                            src={imageUrl || "/placeholder.svg"}
                             alt={`${product.name} - image ${index + 1}`}
                             className="w-full h-full object-cover"
                           />
@@ -209,7 +209,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     </div>
                   )}
                 </div>
-                
+
                 {/* Product Info */}
                 <div>
                   <div className="flex justify-between items-start">
@@ -217,46 +217,33 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     <button
                       onClick={toggleFavorite}
                       className="p-2 rounded-full hover:bg-gray-100"
-                      style={{ color: isFavorite ? 'red' : 'gray' }}
+                      style={{ color: isFavorite ? "red" : "gray" }}
                     >
-                      <Heart
-                        size={20}
-                        fill={isFavorite ? 'red' : 'none'}
-                      />
+                      <Heart size={20} fill={isFavorite ? "red" : "none"} />
                     </button>
                   </div>
-                  
+
                   {/* Category */}
                   <div className="text-sm text-gray-500 mt-1 mb-3">
                     Category: <span className="font-medium">{product.category.name}</span>
                   </div>
-                  
+
                   {/* Price */}
                   <div className="flex items-center mb-4">
                     <span className="text-2xl font-bold" style={{ color: themeColor }}>
-                      ${product.discount_price}
+                      ₦{product.discount_price || product.main_price}
                     </span>
-                    {hasDiscount && (
-                      <span className="text-gray-500 line-through ml-2">
-                        ${product.main_price}
-                      </span>
-                    )}
+                    {hasDiscount && <span className="text-gray-500 line-through ml-2">₦{product.main_price}</span>}
                   </div>
-                  
+
                   {/* Stock Status */}
                   <div className="flex items-center mb-6">
-                    <div 
-                      className={`w-3 h-3 rounded-full mr-2 ${
-                        isInStock ? 'bg-green-500' : 'bg-red-500'
-                      }`}
-                    />
+                    <div className={`w-3 h-3 rounded-full mr-2 ${isInStock ? "bg-green-500" : "bg-red-500"}`} />
                     <span className="text-sm">
-                      {isInStock 
-                        ? `In Stock (${product.quantity} available)` 
-                        : 'Out of Stock'}
+                      {isInStock ? `In Stock (${product.quantity} available)` : "Out of Stock"}
                     </span>
                   </div>
-                  
+
                   {/* Features */}
                   {product.features && product.features.length > 0 && (
                     <div className="mb-6">
@@ -271,11 +258,11 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                       </ul>
                     </div>
                   )}
-                  
+
                   {/* Quantity and Add to Cart */}
                   <div className="flex items-center space-x-4 mb-6">
                     <div className="flex items-center border rounded">
-                      <button 
+                      <button
                         onClick={handleDecrement}
                         className="px-3 py-1 text-gray-500 hover:text-gray-700"
                         disabled={quantity <= 1 || !isInStock}
@@ -283,7 +270,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         -
                       </button>
                       <span className="w-10 text-center">{quantity}</span>
-                      <button 
+                      <button
                         onClick={handleIncrement}
                         className="px-3 py-1 text-gray-500 hover:text-gray-700"
                         disabled={quantity >= product.quantity || !isInStock}
@@ -291,16 +278,16 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                         +
                       </button>
                     </div>
-                    
-                    <button 
+
+                    <button
                       onClick={handleAddToCart}
                       disabled={!isInStock}
                       className="flex-1 py-2 px-4 rounded font-medium flex items-center justify-center"
-                      style={{ 
-                        backgroundColor: isInStock ? themeColor : 'gray',
-                        color: 'white',
+                      style={{
+                        backgroundColor: isInStock ? themeColor : "gray",
+                        color: "white",
                         opacity: isInStock ? 1 : 0.7,
-                        cursor: isInStock ? 'pointer' : 'not-allowed'
+                        cursor: isInStock ? "pointer" : "not-allowed",
                       }}
                     >
                       <ShoppingCart size={18} className="mr-2" />
@@ -309,42 +296,42 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                   </div>
                 </div>
               </div>
-              
+
               {/* Product Details Tabs */}
               <div className="border-t">
                 <div className="flex border-b">
                   <button
-                    onClick={() => setActiveTab('description')}
+                    onClick={() => setActiveTab("description")}
                     className={`py-3 px-6 font-medium text-sm ${
-                      activeTab === 'description' ? 'border-b-2' : 'text-gray-500'
+                      activeTab === "description" ? "border-b-2" : "text-gray-500"
                     }`}
-                    style={{ 
-                      borderColor: activeTab === 'description' ? themeColor : 'transparent'
+                    style={{
+                      borderColor: activeTab === "description" ? themeColor : "transparent",
                     }}
                   >
                     Description
                   </button>
                   <button
-                    onClick={() => setActiveTab('specifications')}
+                    onClick={() => setActiveTab("specifications")}
                     className={`py-3 px-6 font-medium text-sm ${
-                      activeTab === 'specifications' ? 'border-b-2' : 'text-gray-500'
+                      activeTab === "specifications" ? "border-b-2" : "text-gray-500"
                     }`}
-                    style={{ 
-                      borderColor: activeTab === 'specifications' ? themeColor : 'transparent'
+                    style={{
+                      borderColor: activeTab === "specifications" ? themeColor : "transparent",
                     }}
                   >
                     Specifications
                   </button>
                 </div>
-                
+
                 <div className="p-6">
-                  {activeTab === 'description' && (
+                  {activeTab === "description" && (
                     <div className="prose max-w-none">
                       <p>{product.description}</p>
                     </div>
                   )}
-                  
-                  {activeTab === 'specifications' && (
+
+                  {activeTab === "specifications" && (
                     <div>
                       {product.specifications && Object.keys(product.specifications).length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -372,7 +359,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
         </div>
       )}
     </AnimatePresence>
-  );
-};
+  )
+}
 
-export default ProductDetailModal;
+export default ProductDetailModal
