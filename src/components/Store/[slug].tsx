@@ -6,7 +6,7 @@ import { useRouter } from "next/router"
 import { useState, useEffect, useMemo } from "react"
 import Head from "next/head"
 import { motion } from "framer-motion"
-import { Phone, Mail, MapPin, Instagram, Facebook, Twitter, Menu, X } from "lucide-react"
+import { Menu, X } from "lucide-react"
 
 import StorefrontHeader from "../Storeview/header"
 import ProductCard from "../Storeview/card"
@@ -14,6 +14,7 @@ import ShoppingCart from "../Storeview/cart"
 import ProductFilter from "../Storeview/filter"
 import ProductSearch from "../Storeview/search"
 import ProductDetailModal from "../Storeview/modal"
+import StorefrontFooter from "../Storeview/footer"
 
 interface StorefrontData {
   id: number
@@ -151,7 +152,7 @@ export default function StorefrontPage() {
     }
 
     // Show cart after adding item
-    setShowCart(false)
+    setShowCart(true)
   }
 
   const updateCartItemQuantity = (productId: number, newQuantity: number) => {
@@ -206,7 +207,7 @@ export default function StorefrontPage() {
         <meta name="description" content={storefront.tagline || `Shop online at ${storefront.business_name}`} />
       </Head>
 
-      {/* Header */}
+      {/* Header with fixed cart */}
       <StorefrontHeader
         storefront={storefront}
         cartCount={cartCount}
@@ -335,91 +336,8 @@ export default function StorefrontPage() {
         themeColor={themeColor}
       />
 
-      {/* Footer with Business Information */}
-      <footer className="bg-gray-100 border-t mt-8 sm:mt-12">
-        <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 md:py-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-            {/* Store Info */}
-            <div>
-              <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4">{storefront.business_name}</h3>
-              <p className="text-sm text-gray-600">{storefront.description}</p>
-            </div>
-
-            {/* Contact Information */}
-            <div>
-              <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4">Contact Us</h3>
-              <div className="space-y-2 sm:space-y-3">
-                {storefront.phone && (
-                  <div className="flex items-center">
-                    <Phone size={14} className="mr-2 sm:mr-3 text-gray-500" />
-                    <span className="text-sm text-gray-600">{storefront.phone}</span>
-                  </div>
-                )}
-
-                {storefront.email && (
-                  <div className="flex items-center">
-                    <Mail size={14} className="mr-2 sm:mr-3 text-gray-500" />
-                    <span className="text-sm text-gray-600">{storefront.email}</span>
-                  </div>
-                )}
-
-                {storefront.address && (
-                  <div className="flex items-start">
-                    <MapPin size={14} className="mr-2 sm:mr-3 mt-0.5 text-gray-500" />
-                    <span className="text-sm text-gray-600">{storefront.address}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Business Hours */}
-            <div>
-              <h3 className="text-base sm:text-lg font-bold mb-3 sm:mb-4">Business Hours</h3>
-              {storefront.business_hours && Object.keys(storefront.business_hours).length > 0 ? (
-                <ul className="space-y-1 sm:space-y-2">
-                  {Object.entries(storefront.business_hours).map(([day, hours]) => (
-                    <li key={day} className="flex justify-between text-sm">
-                      <span className="capitalize text-gray-600">{day}</span>
-                      <span className="text-gray-600">{hours}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-sm text-gray-600">Not specified</p>
-              )}
-            </div>
-          </div>
-
-          {/* Social Links */}
-          {storefront.social_links && storefront.social_links.length > 0 && (
-            <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-gray-200">
-              <h4 className="text-xs sm:text-sm font-medium text-gray-500 mb-3 sm:mb-4">Follow Us</h4>
-              <div className="flex space-x-3 sm:space-x-4">
-                {storefront.social_links.includes("instagram") && (
-                  <a href="#" className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 transition-colors">
-                    <Instagram size={18} style={{ color: themeColor }} />
-                  </a>
-                )}
-                {storefront.social_links.includes("facebook") && (
-                  <a href="#" className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 transition-colors">
-                    <Facebook size={18} style={{ color: themeColor }} />
-                  </a>
-                )}
-                {storefront.social_links.includes("twitter") && (
-                  <a href="#" className="p-1.5 sm:p-2 rounded-full hover:bg-gray-200 transition-colors">
-                    <Twitter size={18} style={{ color: themeColor }} />
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Copyright */}
-          <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-gray-200 text-center text-xs sm:text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} Powered by Zikor. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      {/* Footer */}
+      <StorefrontFooter storefront={storefront} themeColor={themeColor} />
     </div>
   )
 }
