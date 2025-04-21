@@ -152,7 +152,7 @@ export default function StorefrontPage() {
     }
 
     // Show cart after adding item
-    setShowCart(true)
+    setShowCart(false)
   }
 
   const updateCartItemQuantity = (productId: number, newQuantity: number) => {
