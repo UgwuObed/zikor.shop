@@ -190,7 +190,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isActive, onClick, o
         </div>
 
         {/* Category */}
-        <div className="text-xs text-gray-500 mb-1 sm:mb-2">{product?.category?.name || "Uncategorized"}</div>
+        {/* <div className="text-xs text-gray-500 mb-1 sm:mb-2">{product?.category?.name || "Uncategorized"}</div> */}
 
         {/* Rating */}
         {product.rating && (
@@ -210,7 +210,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isActive, onClick, o
         )}
 
         {/* Description - shorter on mobile */}
-        <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">{truncateText(product.description, 40)}</p>
+        {/* <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">{truncateText(product.description, 40)}</p> */}
 
         {/* Push price and cart to bottom */}
         <div className="mt-auto flex items-center justify-between">
