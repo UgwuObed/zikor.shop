@@ -181,7 +181,7 @@ export default function StorefrontPage() {
             className="w-16 h-16 border-4 border-dashed rounded-full animate-spin mx-auto mb-4"
             style={{ borderTopColor: themeColor }}
           ></div>
-          <h2 className="text-xl font-medium text-gray-600">Loading storefront...</h2>
+          {/* <h2 className="text-xl font-medium text-gray-600">Loading storefront...</h2> */}
         </motion.div>
       </div>
     )
