@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useRouter } from "next/router"
 import { useState, useEffect, useMemo } from "react"
 import Head from "next/head"
@@ -15,6 +14,10 @@ import ProductFilter from "../Storeview/filter"
 import ProductSearch from "../Storeview/search"
 import ProductDetailModal from "../Storeview/modal"
 import StorefrontFooter from "../Storeview/footer"
+import CartNotification from "../Storeview/notification"
+
+
+
 
 interface StorefrontData {
   id: number
@@ -59,7 +62,7 @@ interface StorefrontResponse {
   products: Product[]
 }
 
-export default function StorefrontPage() {
+const  StorefrontPage = () => {
   const router = useRouter()
   const { slug } = router.query
 
@@ -73,6 +76,8 @@ export default function StorefrontPage() {
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showProductModal, setShowProductModal] = useState(false)
+  const [showNotification, setShowNotification] = useState(false);
+  const [notificationProduct, setNotificationProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     if (!slug) return
@@ -141,18 +146,26 @@ export default function StorefrontPage() {
   }, [cartItems])
 
   const addToCart = (productId: number, quantity = 1) => {
-    const existingItemIndex = cartItems.findIndex((item) => item.id === productId)
-
+    if (!storefrontData) return;
+    
+    const product = storefrontData.products.find(p => p.id === productId);
+    const existingItemIndex = cartItems.findIndex((item) => item.id === productId);
+  
     if (existingItemIndex >= 0) {
-      const updatedItems = [...cartItems]
-      updatedItems[existingItemIndex].quantity += quantity
-      setCartItems(updatedItems)
+      const updatedItems = [...cartItems];
+      updatedItems[existingItemIndex].quantity += quantity;
+      setCartItems(updatedItems);
     } else {
-      setCartItems([...cartItems, { id: productId, quantity }])
+      setCartItems([...cartItems, { id: productId, quantity }]);
     }
-
-    // Show cart after adding item
-    setShowCart(false)
+  
+    if (product) {
+      setNotificationProduct(product);
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 3000);
+    }
+    
+    setShowCart(false); 
   }
 
   const updateCartItemQuantity = (productId: number, newQuantity: number) => {
@@ -336,8 +349,20 @@ export default function StorefrontPage() {
         themeColor={themeColor}
       />
 
+      {/* Notification for adding to cart */}
+      {notificationProduct && (
+        <CartNotification
+          product={notificationProduct}
+          isVisible={showNotification}
+          themeColor={themeColor}
+          onViewCart={() => setShowCart(true)}
+        />
+      )}
+
       {/* Footer */}
       <StorefrontFooter storefront={storefront} themeColor={themeColor} />
     </div>
   )
 }
+
+export default StorefrontPage
