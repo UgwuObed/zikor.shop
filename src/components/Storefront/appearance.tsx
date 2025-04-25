@@ -31,12 +31,12 @@ const AppearanceStep: React.FC<AppearanceStepProps> = ({
   prevStep
 }) => {
   const colorThemes: ColorTheme[] = [
-    { id: 'default', name: 'Default', primary: '#8000bb', secondary: '#a266cc' },
-    { id: 'emerald', name: 'Emerald', primary: '#10B981', secondary: '#047857' },
-    { id: 'amber', name: 'Amber', primary: '#F59E0B', secondary: '#B45309' },
-    { id: 'rose', name: 'Rose', primary: '#F43F5E', secondary: '#BE123C' },
-    { id: 'violet', name: 'Violet', primary: '#8B5CF6', secondary: '#6D28D9' },
-    { id: 'slate', name: 'Slate', primary: '#64748B', secondary: '#334155' },
+    { id: '#8000bb', name: 'Default', primary: '#8000bb', secondary: '#a266cc' },
+    { id: '#10B981', name: 'Emerald', primary: '#10B981', secondary: '#047857' },
+    { id: '#F59E0B', name: 'Amber', primary: '#F59E0B', secondary: '#B45309' },
+    { id: '#F43F5E', name: 'Rose', primary: '#F43F5E', secondary: '#BE123C' },
+    { id: '#8B5CF6', name: 'Violet', primary: '#8B5CF6', secondary: '#6D28D9' },
+    { id: '#64748B', name: 'Slate', primary: '#64748B', secondary: '#334155' },
   ];
 
   const handleRemoveBanner = () => {

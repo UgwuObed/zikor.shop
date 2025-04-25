@@ -1,5 +1,6 @@
 import { useState, useEffect, SetStateAction } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter, usePathname } from "next/navigation";
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiHome, FiShoppingBag, FiDollarSign, FiUsers, 
@@ -23,16 +24,11 @@ const Dashboard = () => {
   const [unreadNotifications, setUnreadNotifications] = useState(3);
   const router = useRouter();
 
-  useEffect(() => {
-    const handleRouteChange = () => {
-      setMobileMenuOpen(false);
-    };
+  const pathname = usePathname();
 
-    router.events.on('routeChangeStart', handleRouteChange);
-    return () => {
-      router.events.off('routeChangeStart', handleRouteChange);
-    };
-  }, []);
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -122,7 +118,7 @@ const Dashboard = () => {
   ];
 
   const quickActions = [
-    { title: "Add Product", icon: FiPlus, link: "/products/add" },
+    { title: "Add Product", icon: FiPlus, link: "/product/add" },
     { title: "Create Discount", icon: RiExchangeDollarLine, link: "/marketing/discounts" },
     { title: "View Analytics", icon: BsGraphUp, link: "/analytics" },
     { title: "Process Orders", icon: FiTruck, link: "/sales/orders" },
@@ -194,7 +190,7 @@ const Dashboard = () => {
                     }
                   }}
                   className={`flex items-center p-3 rounded-lg cursor-pointer ${
-                    router.pathname === item.path ? 'bg-purple-50 text-purple-700' : 'hover:bg-gray-50'
+                    pathname === item.path ? 'bg-purple-50 text-purple-700' : 'hover:bg-gray-50'
                   }`}
                 >
                   <item.icon className="text-lg flex-shrink-0" />
@@ -228,15 +224,15 @@ const Dashboard = () => {
                             whileHover={{ x: 5 }}
                             onClick={() => router.push(subItem.path)}
                             className={`p-2 rounded cursor-pointer text-sm ${
-                              router.pathname === subItem.path 
+                              pathname === subItem.path 
                                 ? 'text-purple-600 font-medium' 
                                 : 'text-gray-600 hover:text-gray-800'
                             }`}
                           >
                             {subItem.name}
                           </motion.div>
-                        ))}
-                      </motion.div>
+
+                        ))}                      </motion.div>
                     )}
                   </AnimatePresence>
                 )}
@@ -379,6 +375,7 @@ const Dashboard = () => {
                         key={action.title}
                         whileHover={{ y: -5 }}
                         whileTap={{ scale: 0.98 }}
+                        onClick={() => router.push(action.link)}
                         className="bg-gray-50 hover:bg-purple-50 border border-gray-100 rounded-lg p-4 flex flex-col items-center cursor-pointer transition-all"
                       >
                         <div className="bg-purple-100 p-3 rounded-full text-purple-600 mb-2">

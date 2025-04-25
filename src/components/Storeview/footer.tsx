@@ -6,6 +6,7 @@ import { useState } from "react"
 import { motion } from "framer-motion"
 import { Phone, Mail, MapPin, Instagram, Facebook, Twitter, Clock, ChevronUp, ExternalLink } from "lucide-react"
 
+
 interface StorefrontFooterProps {
   storefront: {
     business_name: string
@@ -14,7 +15,7 @@ interface StorefrontFooterProps {
     phone: string
     address: string
     social_links: string[]
-    business_hours: { [key: string]: string }
+    business_hours: any 
   }
   themeColor: string
 }
@@ -32,10 +33,57 @@ const StorefrontFooter: React.FC<StorefrontFooterProps> = ({ storefront, themeCo
 
   const currentYear = new Date().getFullYear()
 
-
   const generateGradient = (color: string) => {
     const lighterColor = adjustColorBrightness(color, 40)
     return `linear-gradient(135deg, ${color}, ${lighterColor})`
+  }
+
+  const formatBusinessHours = () => {
+    const hours = storefront.business_hours
+
+
+    if (typeof hours === "string") {
+      try {
+        const parsed = JSON.parse(hours)
+        return formatHoursObject(parsed)
+      } catch (e) {
+        console.error("Failed to parse business hours:", e)
+        return {}
+      }
+    }
+
+    return formatHoursObject(hours)
+  }
+
+  const formatHoursObject = (hours: any) => {
+    if (!hours) return {}
+
+    const formattedHours: { [key: string]: string } = {}
+
+    if (hours.Monday && typeof hours.Monday === "object" && "open" in hours.Monday) {
+      Object.entries(hours).forEach(([day, dayData]: [string, any]) => {
+        const dayKey = day.toLowerCase()
+
+        if (dayData.closed) {
+          formattedHours[dayKey] = "Closed"
+        } else if (dayData.open && dayData.close) {
+          const formatAmPm = (time: string) => {
+            if (!time) return ""
+            const [hours, minutes] = time.split(":")
+            const h = Number.parseInt(hours, 10)
+            return `${h % 12 || 12}${minutes === "00" ? "" : `:${minutes}`}${h >= 12 ? "pm" : "am"}`
+          }
+
+          formattedHours[dayKey] = `${formatAmPm(dayData.open)} - ${formatAmPm(dayData.close)}`
+        } else {
+          formattedHours[dayKey] = ""
+        }
+      })
+
+      return formattedHours
+    }
+
+    return hours
   }
 
   return (
@@ -192,22 +240,20 @@ const StorefrontFooter: React.FC<StorefrontFooterProps> = ({ storefront, themeCo
                   <p className="text-gray-300">We're open during these hours</p>
                 </div>
 
-                {storefront.business_hours && Object.keys(storefront.business_hours).length > 0 ? (
+                {storefront.business_hours && (
                   <div className="bg-gray-800 rounded-lg p-4">
-                    {Object.entries(storefront.business_hours).map(([day, hours], index) => (
+                    {Object.entries(formatBusinessHours()).map(([day, hours], index) => (
                       <div
                         key={day}
                         className={`flex justify-between py-2 text-sm ${
-                          index < Object.entries(storefront.business_hours).length - 1 ? "border-b border-gray-700" : ""
+                          index < Object.entries(formatBusinessHours()).length - 1 ? "border-b border-gray-700" : ""
                         }`}
                       >
                         <span className="capitalize text-gray-300 font-medium">{day}</span>
-                        <span className="text-gray-300">{hours}</span>
+                        <span className="text-gray-300">{String(hours)}</span>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <p className="text-gray-400 text-sm">Hours not specified</p>
                 )}
               </div>
             </div>
@@ -225,6 +271,7 @@ const StorefrontFooter: React.FC<StorefrontFooterProps> = ({ storefront, themeCo
                 target="_blank"
                 className="text-sm font-medium flex items-center hover:text-white transition-colors"
                 style={{ color: themeColor }}
+                rel="noreferrer"
               >
                 Zikor
                 <ExternalLink size={12} className="ml-1" />
@@ -236,7 +283,6 @@ const StorefrontFooter: React.FC<StorefrontFooterProps> = ({ storefront, themeCo
     </footer>
   )
 }
-
 
 function adjustColorBrightness(hex: string, percent: number): string {
   hex = hex.replace(/^#/, "")
