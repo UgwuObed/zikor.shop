@@ -1,6 +1,6 @@
-import Product from "../../components/Product/add";
+import Index from "../../components/Product/index";
 import "../../app/globals.css";
 
 export default function ProductPage() {
-  return <Product />;
+  return <Index />;
 }

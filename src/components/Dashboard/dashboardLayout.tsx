@@ -35,9 +35,9 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     { 
       name: 'Products', 
       icon: FiShoppingBag, 
-      path: '/products',
+      // path: '/product',
       subItems: [
-        { name: 'All Products', path: '/products' },
+        { name: 'All Products', path: '/product/all' },
         { name: 'Categories', path: '/products/categories' },
         { name: 'Inventory', path: '/products/inventory' },
       ]

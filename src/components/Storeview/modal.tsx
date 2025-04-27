@@ -448,11 +448,13 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
                     {/* Price Section */}
                     <div className="flex items-center mb-5">
                       <span className="text-3xl font-bold" style={{ color: hasDiscount ? "#e53e3e" : themeColor }}>
-                        ₦{product.discount_price || product.main_price}
+                        ₦{Number(product.discount_price || product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                       </span>
                       {hasDiscount && (
                         <>
-                          <span className="text-gray-500 line-through text-lg ml-3">₦{product.main_price}</span>
+                          <span className="text-gray-500 line-through text-lg ml-3">
+                            ₦{Number(product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                          </span>
                           <span className="ml-3 text-sm font-medium text-red-600">Save {discountPercentage}%</span>
                         </>
                       )}

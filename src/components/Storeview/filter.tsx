@@ -92,7 +92,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
 
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mb-4 sm:mb-6">
-      {/* Header - make it more visible on mobile */}
+      {/* Header */}
       <div
         className="px-3 sm:px-4 py-2.5 sm:py-3 flex justify-between items-center cursor-pointer border-b"
         onClick={() => setIsOpen(!isOpen)}
@@ -105,7 +105,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
         <button>{isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}</button>
       </div>
 
-      {/* Filter Body - improve spacing for mobile */}
+      {/* Filter Body*/}
       {isOpen && (
         <motion.div
           initial={{ height: 0, opacity: 0 }}
@@ -135,7 +135,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
             </div>
           </div>
 
-          {/* Price Range - adjust for mobile */}
+          {/* Price Range */}
           <div className="mb-4 sm:mb-6">
             <h4 className="text-xs sm:text-sm font-medium mb-2 sm:mb-3">Price Range</h4>
             <div className="flex items-center space-x-2 mb-3 sm:mb-4">
@@ -182,7 +182,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
             </div>
           </div>
 
-          {/* Availability - adjust for mobile */}
+          {/* Availability */}
           <div className="mb-4 sm:mb-6">
             <h4 className="text-xs sm:text-sm font-medium mb-2 sm:mb-3">Availability</h4>
             <div className="flex items-center">
@@ -200,7 +200,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
             </div>
           </div>
 
-          {/* Actions - adjust for mobile */}
+          {/* Actions */}
           <div className="flex space-x-2">
             <button
               onClick={resetFilters}

@@ -159,11 +159,13 @@ const ProductDetailView: React.FC<ProductDetailViewProps> = ({ product, onAddToC
           </div>
 
           <div className="mt-4 flex items-baseline">
-            <span className="text-2xl font-bold" style={{ color: themeColor }}>
-              ₦{product.discount_price || product.main_price}
+          <span className="text-2xl font-bold" style={{ color: themeColor }}>
+              ₦{Number(product.discount_price || product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
             </span>
             {Number(product.discount_price || 0) < Number(product.main_price) && product.discount_price && (
-              <span className="ml-2 text-sm line-through text-gray-500">₦{product.main_price}</span>
+              <span className="ml-2 text-sm line-through text-gray-500">
+                ₦{Number(product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+              </span>
             )}
           </div>
 

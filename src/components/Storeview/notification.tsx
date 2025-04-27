@@ -65,11 +65,11 @@ const CartNotification: React.FC<NotificationProps> = ({
                 </div>
 
                 <div className="ml-3 flex-1">
-                  <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
-                  <p className="text-sm text-gray-500">
-                    ₦{product.discount_price || product.main_price}
-                  </p>
-                </div>
+              <p className="text-sm font-medium text-gray-900 truncate">{product.name}</p>
+              <p className="text-sm text-gray-500">
+                ₦{Number(product.discount_price || product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+              </p>
+            </div>
               </div>
 
               <div className="mt-4">

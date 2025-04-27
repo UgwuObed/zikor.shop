@@ -66,7 +66,8 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
   const shipping = subtotal > 0 ? 5 : 0
   const total = subtotal + shipping
 
-  const formatPrice = (price: number) => `₦${price.toFixed(2)}`
+  const formatPrice = (price: number) => 
+  `₦${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
 
   const handleRemoveItem = (productId: number) => {
     setIsRemoving(productId)
@@ -226,12 +227,14 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                               </div>
 
                               <div className="flex items-center mt-2">
-                                <span className="font-semibold text-lg" style={{ color: themeColor }}>
-                                  ₦{product.discount_price || product.main_price}
+                              <span className="font-semibold text-lg" style={{ color: themeColor }}>
+                                ₦{Number(product.discount_price || product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                              </span>
+                              {Number(product.main_price) > Number(product.discount_price || 0) && (
+                                <span className="text-xs text-gray-400 line-through ml-2">
+                                  ₦{Number(product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                                 </span>
-                                {Number(product.main_price) > Number(product.discount_price || 0) && (
-                                  <span className="text-xs text-gray-400 line-through ml-2">₦{product.main_price}</span>
-                                )}
+                              )}
                               </div>
 
                               {/* Quantity Controls with improved styling */}

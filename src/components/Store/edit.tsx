@@ -9,7 +9,7 @@ import { Card, CardFooter } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Loader2, ArrowLeft } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import apiClient from '../../apiClient';
+import apiClient from "../../apiClient"
 import BasicInfoForm from "../Storefront/edit/basic"
 import AppearanceForm from "../Storefront/edit/appearance"
 import ContactInfoForm from "../Storefront/edit/contact"
@@ -28,54 +28,60 @@ const EditStorefrontPage = () => {
     fetchStorefrontData()
   }, [])
 
-
-  
   const fetchStorefrontData = async () => {
     try {
-      setLoading(true);
-      const accessToken = localStorage.getItem('accessToken'); // grab token
-  
+      setLoading(true)
+      const accessToken = localStorage.getItem("accessToken") // grab token
+
       const response = await apiClient.get("/storefront", {
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`, // add token to header
+          Authorization: `Bearer ${accessToken}`, // add token to header
         },
-      });
-  
+      })
+
       if (response.status !== 200) {
-        throw new Error("Failed to fetch storefront data");
+        throw new Error("Failed to fetch storefront data")
       }
-  
-      const data = response.data;
-      setStorefront(data.storefront);
-  
+
+      const data = response.data
+      setStorefront(data.storefront)
+
       // Initialize form data with existing values
-      const initialFormData = new FormData();
+      const initialFormData = new FormData()
       Object.entries(data.storefront).forEach(([key, value]) => {
         if (key !== "logo" && key !== "banner" && value !== null) {
           if (typeof value === "object") {
-            initialFormData.append(key, JSON.stringify(value));
+            initialFormData.append(key, JSON.stringify(value))
           } else {
-            initialFormData.append(key, value as string);
+            initialFormData.append(key, value as string)
           }
         }
-      });
-  
-      setFormData(initialFormData);
+      })
+
+      setFormData(initialFormData)
     } catch (error) {
-      console.error("Error fetching storefront data:", error);
+      console.error("Error fetching storefront data:", error)
       toast({
         title: "Error",
         description: "Failed to load storefront data. Please try again.",
         variant: "destructive",
-      });
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
-  
+  }
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
+
+    // Create a new FormData instance to avoid mutating the current one
+    const newFormData = new FormData()
+
+    // Copy all existing entries
+    for (const [key, value] of formData.entries()) {
+      newFormData.append(key, value)
+    }
 
     // Handle nested objects (social_links, bank_details, etc.)
     if (name.includes(".")) {
@@ -90,27 +96,41 @@ const EditStorefrontPage = () => {
       }
 
       const updatedValue = { ...parsedValue, [child]: value }
-      formData.set(parent, JSON.stringify(updatedValue))
+      newFormData.set(parent, JSON.stringify(updatedValue))
     } else {
-      formData.set(name, value)
+      newFormData.set(name, value)
     }
 
-    // Create a new FormData instance to trigger re-render
-    setFormData(new FormData(formData as any))
+    setFormData(newFormData)
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, files } = e.target
     if (files && files[0]) {
-      formData.set(name, files[0])
-      // Create a new FormData instance to trigger re-render
-      setFormData(new FormData(formData as any))
+      // Create a new FormData instance
+      const newFormData = new FormData()
+
+      // Copy all existing entries
+      for (const [key, value] of formData.entries()) {
+        newFormData.append(key, value)
+      }
+
+      newFormData.set(name, files[0])
+      setFormData(newFormData)
     }
   }
 
   const handleBusinessHoursChange = (businessHours: any) => {
-    formData.set("business_hours", JSON.stringify(businessHours))
-    setFormData(new FormData(formData as any))
+    // Create a new FormData instance
+    const newFormData = new FormData()
+
+    // Copy all existing entries
+    for (const [key, value] of formData.entries()) {
+      newFormData.append(key, value)
+    }
+
+    newFormData.set("business_hours", JSON.stringify(businessHours))
+    setFormData(newFormData)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -231,13 +251,14 @@ const EditStorefrontPage = () => {
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    const nextTab = {
-                      basic: "appearance",
-                      appearance: "contact",
-                      contact: "hours",
-                      hours: "bank",
-                      bank: "bank",
-                    }[activeTab] ?? "bank"
+                    const nextTab =
+                      {
+                        basic: "appearance",
+                        appearance: "contact",
+                        contact: "hours",
+                        hours: "bank",
+                        bank: "bank",
+                      }[activeTab] ?? "bank"
                     setActiveTab(nextTab)
                   }}
                   disabled={activeTab === "bank" || saving}

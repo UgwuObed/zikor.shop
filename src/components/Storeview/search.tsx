@@ -140,7 +140,7 @@ const ProductSearch: React.FC<ProductSearchProps> = ({ products, onSelectProduct
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500">{product.category.name}</span>
                       <span className="text-xs sm:text-sm font-medium" style={{ color: themeColor }}>
-                        ₦{product.discount_price || product.main_price}
+                      ₦{Number(product.discount_price || product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                       </span>
                     </div>
                   </div>

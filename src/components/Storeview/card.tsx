@@ -263,16 +263,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isActive, onClick, o
 
         <div className="mt-auto pt-2 flex items-center justify-between">
           <div className="flex flex-col">
-            <span className="font-bold text-base text-gray-900">
-              ₦{product.discount_price || product.main_price || "0.00"}
+          <span className="font-bold text-base text-gray-900">
+          ₦{Number(product.discount_price || product.main_price || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+          </span>
+          {hasDiscount && (
+            <span className="text-xs text-gray-500 line-through">
+              ₦{Number(product.main_price || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
             </span>
-            {hasDiscount && (
-              <span className="text-xs text-gray-500 line-through">
-                ₦{product.main_price || "0.00"}
-              </span>
-            )}
+          )}
           </div>
-
           <motion.button
             onClick={handleAddToCart}
             disabled={!isInStock}
