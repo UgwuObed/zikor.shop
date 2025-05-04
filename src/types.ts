@@ -20,6 +20,8 @@ export interface IPricing {
     name: string;
     price: number | string;
     features: string[];
+    yearlyPrice: number | string;
+    popular?: boolean;
 }
 
 export interface IFAQ {

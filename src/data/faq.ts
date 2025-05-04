@@ -1,25 +1,40 @@
-import { IFAQ } from "../types";
-import { siteDetails } from "./siteDetails";
+// data/faq.ts
 
-export const faqs: IFAQ[] = [
+export const faqs = [
     {
-        question: `Is ${siteDetails.siteName} secure?`,
-        answer: 'Absolutely. We use bank-level encryption to protect your data and never store your login information. Plus, our biometric authentication adds an extra layer of security.',
+      question: "What is Zikor?",
+      answer:
+        "Zikor is an all-in-one storefront platform that helps you create a professional online store, manage products, accept payments, and grow your business — even with zero technical skills.",
     },
     {
-        question: `Can I use ${siteDetails.siteName} on multiple devices?`,
-        answer: 'Absolutely! Your Finwise account syncs seamlessly across all your devices - smartphone, tablet, and computer.',
+      question: "How do I create a store on Zikor?",
+      answer:
+        "Simply sign up, choose a plan (Starter, Pro, or Business), fill in your store details like name, logo, and operating hours — and your storefront is live instantly!",
     },
     {
-        question: 'Can I connect all my bank accounts?',
-        answer: `Yes! ${siteDetails.siteName} supports connections with over 10,000 financial institutions worldwide. Simply log in through our secure portal to link your accounts.`
+      question: "What’s included in the Starter, Pro, and Business plans?",
+      answer:
+        "The Starter plan is free and includes basic storefront features. Pro offers advanced tools like product import from Instagram and AI assistant features. Business includes everything in Pro plus custom domains, CAC registration (coming soon), and logistics integration.",
     },
     {
-        question: 'Do I need any financial expertise to use the investing features?',
-        answer: 'Not at all! Our expert-curated portfolios and educational resources make investing accessible to everyone, regardless of experience level.',
+      question: "Can I use my own domain?",
+      answer:
+        "Yes! Business plan users can connect their custom domains to give their stores a more professional look and feel.",
     },
     {
-        question: 'What if I need help using the app?',
-        answer: 'Our dedicated support team is available 24/7 via chat or email. Plus, we offer extensive in-app tutorials and a comprehensive knowledge base to help you make the most of Finwise.'
-    }
-];
+      question: "Do you offer support?",
+      answer:
+        "Absolutely. You can reach out to us anytime via email at help@zikor.shop. We’re here to help you grow your business!",
+    },
+    {
+      question: "What payment methods does Zikor support?",
+      answer:
+        "Zikor supports secure online payments via Paystack, allowing your customers to pay with cards, bank transfers, and more.",
+    },
+    {
+      question: "How does Instagram product import work?",
+      answer:
+        "With a few clicks, Pro and Business users can sync products from their Instagram business profile directly into their Zikor store.",
+    },
+  ];
+  

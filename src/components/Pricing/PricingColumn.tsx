@@ -17,7 +17,7 @@ const PricingColumn: React.FC<Props> = ({ tier, highlight }: Props) => {
                 <h3 className="text-2xl font-semibold mb-4">{name}</h3>
                 <p className="text-3xl md:text-5xl font-bold mb-6">
                     <span className={clsx({ "text-secondary": highlight })}>
-                        {typeof price === 'number' ? `$${price}` : price}
+                        {typeof price === 'number' ? `₦${price}` : price}
                     </span>
                     {typeof price === 'number' && <span className="text-lg font-normal text-gray-600">/mo</span>}
                 </p>
@@ -27,7 +27,6 @@ const PricingColumn: React.FC<Props> = ({ tier, highlight }: Props) => {
             </div>
             <div className="p-6 mt-1">
                 <p className="font-bold mb-0">FEATURES</p>
-                <p className="text-foreground-accent mb-5">Everything in basic, plus...</p>
                 <ul className="space-y-4 mb-8">
                     {features.map((feature, index) => (
                         <li key={index} className="flex items-center">
