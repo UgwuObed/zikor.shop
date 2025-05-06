@@ -24,7 +24,7 @@ const PlayStoreButton = ({ dark }: { dark?: boolean }) => {
                 </div>
                 <div>
                     <div className="text-xs">
-                        GET IT ON
+                       Coming soon to
                     </div>
                     <div className="-mt-1 font-sans text-xl font-semibold">
                         Google Play

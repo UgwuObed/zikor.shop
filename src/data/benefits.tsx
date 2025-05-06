@@ -1,72 +1,86 @@
-import { FiBarChart2, FiBriefcase, FiDollarSign, FiLock, FiPieChart, FiShield, FiTarget, FiTrendingUp, FiUser } from "react-icons/fi";
-
-import { IBenefit } from "../types"
-
-export const benefits: IBenefit[] = [
+import {
+    FiShoppingCart,
+    FiSettings,
+    FiTrendingUp,
+    FiSmartphone,
+    FiUploadCloud,
+    FiGlobe,
+    FiShield,
+    FiUserCheck,
+    FiPackage,
+  } from "react-icons/fi";
+  
+  import { IBenefit } from "../types";
+  
+  export const benefits: IBenefit[] = [
     {
-        title: "Smart Budgeting",
-        description: "Take the guesswork out of managing your money. Our AI-powered budgeting tool adapts to your lifestyle and helps you stay on track.",
-        bullets: [
-            {
-                title: "Intelligent Categorization",
-                description: "Automatically sorts your transactions for crystal-clear insights.",
-                icon: <FiBarChart2 size={26} />
-            },
-            {
-                title: "Customizable Goals",
-                description: "Set and track financial objectives that matter to you.",
-                icon: <FiTarget size={26} />
-            },
-            {
-                title: "Predictive Analysis",
-                description: "Get ahead of your finances with spending forecasts and alerts.",
-                icon: <FiTrendingUp size={26} />
-            }
-        ],
-        imageSrc: "/images/mockup-1.webp"
+      title: "Effortless Store Creation",
+      description:
+        "Launch your own professional storefront in minutes — no tech skills needed. Zikor simplifies the process so you can focus on running your business.",
+      bullets: [
+        {
+          title: "Customizable Storefronts",
+          description: "Choose your store name, logo, colors, and layout — make it yours.",
+          icon: <FiShoppingCart size={26} />,
+        },
+        {
+          title: "Mobile-First Design",
+          description: "Your store looks great and functions smoothly on any device.",
+          icon: <FiSmartphone size={26} />,
+        },
+        {
+          title: "Custom Domains (Business Plan)",
+          description: "Stand out with your own branded store URL.",
+          icon: <FiGlobe size={26} />,
+        },
+      ],
+      imageSrc: "https://res.cloudinary.com/dantj20mr/image/upload/v1746542666/zikstore-removebg-preview_sst4ls.png",
     },
     {
-        title: "Seamless Investing",
-        description: "Start building wealth today, no financial degree required. Finwise makes investing accessible and straightforward.",
-        bullets: [
-            {
-                title: "Micro-Investing",
-                description: "Begin with as little as $1 and watch your money grow.",
-                icon: <FiDollarSign size={26} />
-            },
-            {
-                title: "Expert Portfolios",
-                description: "Choose from investment strategies tailored to your risk tolerance.",
-                icon: <FiBriefcase size={26} />
-            },
-            {
-                title: "Real-Time Performance",
-                description: "Track your investments with easy-to-understand metrics and visuals.",
-                icon: <FiPieChart size={26} />
-            }
-        ],
-        imageSrc: "/images/mockup-2.webp"
+      title: "Business Automation & AI Tools",
+      description:
+        "From inventory to insights, Zikor gives you smart tools to automate your workflow and grow your store without the overwhelm.",
+      bullets: [
+        {
+          title: "AI Product Descriptions",
+          description: "Generate compelling descriptions for your products in seconds.",
+          icon: <FiSettings size={26} />,
+        },
+        {
+          title: "Sales & Order Management",
+          description: "Track orders, manage sales, and stay on top of customer needs effortlessly.",
+          icon: <FiTrendingUp size={26} />,
+        },
+        {
+          title: "Instagram Product Import",
+          description: "Sync your IG shop to auto-import products with images and captions.",
+          icon: <FiUploadCloud size={26} />,
+        },
+      ],
+      imageSrc: "https://res.cloudinary.com/dantj20mr/image/upload/v1746544929/Black_and_White_Phone_Mockup_Webinar_Promotion_Instagram_Story__1_-removebg-preview_dzdejj.png",
     },
     {
-        title: "Bank-Grade Security",
-        description: "Your financial data deserves the best protection. Rest easy knowing Finwise employs cutting-edge security measures.",
-        bullets: [
-            {
-                title: "Military-Grade Encryption",
-                description: "Your information is safeguarded with the highest level of encryption.",
-                icon: <FiLock size={26} />
-            },
-            {
-                title: "Biometric Authentication",
-                description: "Access your account securely with fingerprint or facial recognition.",
-                icon: <FiUser size={26} />
-            },
-            {
-                title: "Real-Time Fraud Detection",
-                description: "Our system constantly monitors for suspicious activity to keep your money safe.",
-                icon: <FiShield size={26} />
-            }
-        ],
-        imageSrc: "/images/mockup-1.webp"
+      title: "Reliable Support & Security",
+      description:
+        "Zikor gives you peace of mind with secure systems, fraud protection, and expert support whenever you need it.",
+      bullets: [
+        {
+          title: "User Verification & Store Protection",
+          description: "We vet businesses and keep your store secure from fraud.",
+          icon: <FiShield size={26} />,
+        },
+        {
+          title: "Dedicated Support Team",
+          description: "Need help? Our support team is always just an email away.",
+          icon: <FiUserCheck size={26} />,
+        },
+        {
+          title: "Logistics & CAC (Coming Soon)",
+          description: "Get delivery support and official CAC registration under the Business plan.",
+          icon: <FiPackage size={26} />,
+        },
+      ],
+      imageSrc: "https://res.cloudinary.com/dantj20mr/image/upload/v1746545639/Black_and_White_Phone_Mockup_Webinar_Promotion_Instagram_Story__2_-removebg-preview_c6kux4.png",
     },
-]
+  ];
+  
