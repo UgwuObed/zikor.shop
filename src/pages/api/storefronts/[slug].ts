@@ -4,14 +4,26 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const { slug } = req.query;
+  // Get slug from query params (for zikor.shop/store/[slug])
+  let { slug } = req.query;
 
   try {
+    // Check if we're on a subdomain (for [slug].zikor.shop)
+    const host = req.headers.host || '';
+    const subdomainMatch = host.match(/^([^.]+)\.zikor\.shop$/);
+    
+    // If we're on a subdomain, use that as the slug
+    if (subdomainMatch && !['www', 'api'].includes(subdomainMatch[1])) {
+      slug = subdomainMatch[1];
+      console.log(`Detected subdomain store: ${slug}`);
+    }
+
     if (!slug || typeof slug !== 'string') {
       return res.status(400).json({ message: 'Invalid slug parameter' });
     }
 
     const backendUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/store/${slug}`;
+    console.log(`Fetching store data from: ${backendUrl}`);
   
     const response = await fetch(backendUrl);
     
