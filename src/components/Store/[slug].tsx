@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo } from "react"
 import Head from "next/head"
 import { motion } from "framer-motion"
 import { Menu, X } from "lucide-react"
+import { getSubdomain } from "../../../utils/subdomain"
 
 import StorefrontHeader from "../Storeview/header"
 import ProductCard from "../Storeview/card"
@@ -64,7 +65,7 @@ interface StorefrontResponse {
 
 const  StorefrontPage = () => {
   const router = useRouter()
-  const { slug } = router.query
+  const { slug: routerSlug } = router.query
 
   const [storefrontData, setStorefrontData] = useState<StorefrontResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -78,14 +79,32 @@ const  StorefrontPage = () => {
   const [showProductModal, setShowProductModal] = useState(false)
   const [showNotification, setShowNotification] = useState(false);
   const [notificationProduct, setNotificationProduct] = useState<Product | null>(null);
+  const [effectiveSlug, setEffectiveSlug] = useState<string | null>(null)
+
 
   useEffect(() => {
-    if (!slug) return
+    // If we have a slug from the router, use it
+    if (routerSlug && typeof routerSlug === 'string') {
+      setEffectiveSlug(routerSlug)
+      return
+    }
+    
+    // Otherwise check for a subdomain
+    if (typeof window !== 'undefined') {
+      const subdomainSlug = getSubdomain(window.location.hostname)
+      if (subdomainSlug && subdomainSlug !== 'www') {
+        setEffectiveSlug(subdomainSlug)
+      }
+    }
+  }, [routerSlug])
 
+useEffect(() => {
+    if (!effectiveSlug) return
+    
     async function fetchStorefront() {
       try {
         setLoading(true)
-        const response = await fetch(`/api/storefronts/${slug}`)
+        const response = await fetch(`/api/storefronts/${effectiveSlug}`)
 
         if (!response.ok) {
           throw new Error(`Failed to load storefront: ${response.statusText}`)
@@ -106,7 +125,7 @@ const  StorefrontPage = () => {
     }
 
     fetchStorefront()
-  }, [slug])
+  }, [effectiveSlug])
 
   const themeColor = useMemo(() => {
     if (!storefrontData) return "#6366f1"
