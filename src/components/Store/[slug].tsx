@@ -83,6 +83,8 @@ const  StorefrontPage = () => {
 
 
   useEffect(() => {
+
+    console.log('Store page loaded with slug:', routerSlug)
     // If we have a slug from the router, use it
     if (routerSlug && typeof routerSlug === 'string') {
       setEffectiveSlug(routerSlug)
