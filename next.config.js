@@ -2,10 +2,16 @@ module.exports = {
   async rewrites() {
     return [
       {
-        source: '/:path*',
-        destination: '/:path*',
-      }
-    ]
+        source: '/',
+        has: [
+          {
+            type: 'host',
+            value: '(?<subdomain>.+)\.zikor\.shop',
+          },
+        ],
+        destination: '/store/:subdomain',
+      },
+    ];
   },
     images: {
       domains: ['res.cloudinary.com'],
