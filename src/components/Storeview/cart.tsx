@@ -154,7 +154,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
       setBuyerInfoSaved(true);
       setInfoMessage("Your information has been saved! You can continue shopping or proceed to checkout.");
       
-      // Go back to cart view after saving info
+
       setCheckoutStep('cart');
     } catch (error) {
       console.error('Failed to save buyer info:', error);
