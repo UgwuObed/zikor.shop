@@ -3,8 +3,10 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { ShoppingCartIcon as CartIcon, Plus, Minus, CreditCard, Trash2, 
-         ArrowLeft, X, ShoppingBag, Save, Check, Info } from "lucide-react"
+import { 
+  ShoppingCartIcon as CartIcon, Plus, Minus, CreditCard, Trash2, 
+  ArrowLeft, X, ShoppingBag, Save, Check, Info, ArrowRight, Lock
+} from "lucide-react"
 
 interface Product {
   id: number
@@ -63,8 +65,10 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
   })
   const [checkoutStep, setCheckoutStep] = useState<'cart' | 'buyer-info' | 'confirm'>('cart')
   const [infoMessage, setInfoMessage] = useState<string | null>(null)
+  const [isExiting, setIsExiting] = useState(false)
+  const [showSavedMessage, setShowSavedMessage] = useState(false);
   
-  // Set buyer info from props if provided
+
   useEffect(() => {
     if (initialBuyerInfo && initialBuyerInfo.name) {
       setBuyerInfo(initialBuyerInfo);
@@ -72,7 +76,6 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     }
   }, [initialBuyerInfo]);
 
-  // Map cart items to products
   useEffect(() => {
     const itemsWithDetails = cartItems
       .map((item) => {
@@ -105,7 +108,6 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     }
   }, [cartItems, products, buyerInfo, checkoutStep, buyerInfoSaved])
 
-  // Calculate cart totals
   const subtotal = productsInCart.reduce(
     (total, item) => total + Number(item.discount_price || item.main_price) * item.cartQuantity,
     0,
@@ -125,7 +127,6 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
   }
 
   const handleProceedToCheckout = () => {
-    // If buyer info is already saved, go directly to confirmation
     if (buyerInfoSaved && buyerInfo.name && buyerInfo.email && buyerInfo.phone) {
       setCheckoutStep('confirm')
     } else {
@@ -152,10 +153,15 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
       }
       
       setBuyerInfoSaved(true);
-      setInfoMessage("Your information has been saved! You can continue shopping or proceed to checkout.");
+      setShowSavedMessage(true);
       
-
-      setCheckoutStep('cart');
+      setTimeout(() => {
+        setShowSavedMessage(false);
+      }, 5000);
+      
+      setTimeout(() => {
+        setCheckoutStep('cart');
+      }, 1500);
     } catch (error) {
       console.error('Failed to save buyer info:', error);
       setInfoMessage("There was a problem saving your information. Please try again.");
@@ -175,7 +181,6 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     setCheckoutLoading(true)
     try {
       await onCheckout(buyerInfo)
-      // Reset the view after successful checkout
       setCheckoutStep('cart')
       setInfoMessage(null)
     } catch (error) {
@@ -186,86 +191,214 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     }
   }
 
+  const handleClose = () => {
+    setIsExiting(true)
+    setTimeout(() => {
+      setIsExiting(false)
+      onClose()
+    }, 300)
+  }
+
+  // Check if inputs are valid
+  const isBuyerInfoValid = buyerInfo.name && buyerInfo.email && buyerInfo.phone;
+
   // Determine what content to show based on checkout step
   const renderCheckoutContent = () => {
     switch (checkoutStep) {
       case 'buyer-info':
         return (
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Your Information</h3>
-            
-            {infoMessage && (
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 rounded">
-                <div className="flex items-start">
-                  <div className="flex-shrink-0">
-                    <Info size={18} className="text-blue-500" />
+            <div className="checkout-steps mb-6">
+              <div className="flex items-center justify-between">
+                <div className="step-item flex flex-col items-center">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center mb-1 bg-gray-100">
+                    <CartIcon size={16} className="text-gray-500" />
                   </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-blue-700">{infoMessage}</p>
+                  <div className="text-xs text-gray-500">Cart</div>
+                </div>
+                <div className="step-line flex-1 h-1 mx-2" style={{ backgroundColor: `${themeColor}20` }}></div>
+                <div className="step-item flex flex-col items-center">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center mb-1" style={{ backgroundColor: themeColor }}>
+                    <motion.div
+                      initial={{ scale: 0.5 }}
+                      animate={{ scale: 1 }}
+                    >
+                      <Info size={16} className="text-white" />
+                    </motion.div>
                   </div>
+                  <div className="text-xs font-medium" style={{ color: themeColor }}>Details</div>
+                </div>
+                <div className="step-line flex-1 h-1 mx-2" style={{ backgroundColor: `${themeColor}20` }}></div>
+                <div className="step-item flex flex-col items-center">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center mb-1 bg-gray-100">
+                    <CreditCard size={16} className="text-gray-500" />
+                  </div>
+                  <div className="text-xs text-gray-500">Confirm</div>
                 </div>
               </div>
-            )}
-            
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Full Name *</label>
-                <input
-                  type="text"
-                  value={buyerInfo.name}
-                  onChange={(e) => setBuyerInfo({...buyerInfo, name: e.target.value})}
-                  className="w-full p-2 border rounded-lg"
-                  placeholder="Enter your full name"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Email *</label>
-                <input
-                  type="email"
-                  value={buyerInfo.email}
-                  onChange={(e) => setBuyerInfo({...buyerInfo, email: e.target.value})}
-                  className="w-full p-2 border rounded-lg"
-                  placeholder="Enter your email address"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600 mb-1">Phone Number *</label>
-                <input
-                  type="tel"
-                  value={buyerInfo.phone}
-                  onChange={(e) => setBuyerInfo({...buyerInfo, phone: e.target.value})}
-                  className="w-full p-2 border rounded-lg"
-                  placeholder="Enter your phone number"
-                  required
-                />
-              </div>
             </div>
+            
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="p-5 rounded-2xl shadow-md bg-white border"
+              style={{ borderColor: `${themeColor}20` }}
+            >
+              <h3 className="text-sm font-semibold mb-5 flex items-center gap-1" style={{ color: themeColor }}>
+                <Info size={18} /> 
+                Your Information is required to save your cart
+              </h3>
+              
+              {showSavedMessage && (
+  <motion.div 
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -10 }}
+    className="bg-green-50 border-l-4 border-green-500 p-4 mb-4 rounded-lg"
+  >
+    <div className="flex">
+      <div className="flex-shrink-0">
+        <Check size={18} className="text-green-500" />
+      </div>
+      <div className="ml-3">
+        <p className="text-sm text-green-700">Your information has been saved successfully!</p>
+      </div>
+    </div>
+  </motion.div>
+)}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1.5 font-medium">Full Name *</label>
+                  <input
+                    type="text"
+                    value={buyerInfo.name}
+                    onChange={(e) => setBuyerInfo({...buyerInfo, name: e.target.value})}
+                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-opacity-50 transition-all"
+                    style={{ 
+                      borderColor: `${themeColor}30`,
+                      '--tw-ring-color': themeColor 
+                    } as React.CSSProperties}
+                    placeholder="Enter your full name"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1.5 font-medium">Email *</label>
+                  <input
+                    type="email"
+                    value={buyerInfo.email}
+                    onChange={(e) => setBuyerInfo({...buyerInfo, email: e.target.value})}
+                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-opacity-50 transition-all"
+                    style={{ 
+                      borderColor: `${themeColor}30`,
+                      '--tw-ring-color': themeColor 
+                    } as React.CSSProperties}
+                    placeholder="Enter your email address"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-600 mb-1.5 font-medium">Phone Number *</label>
+                  <input
+                    type="tel"
+                    value={buyerInfo.phone}
+                    onChange={(e) => setBuyerInfo({...buyerInfo, phone: e.target.value})}
+                    className="w-full p-3 border rounded-xl focus:ring-2 focus:ring-opacity-50 transition-all"
+                    style={{ 
+                      borderColor: `${themeColor}30`,
+                      '--tw-ring-color': themeColor 
+                    } as React.CSSProperties}
+                    placeholder="Enter your phone number"
+                    required
+                  />
+                </div>
+              </div>
+            </motion.div>
           </div>
         );
       
       case 'confirm':
         return (
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
-            
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <h4 className="font-medium mb-2">Your Information</h4>
-              <div className="text-sm text-gray-600">
-                <p><span className="font-medium">Name:</span> {buyerInfo.name}</p>
-                <p><span className="font-medium">Email:</span> {buyerInfo.email}</p>
-                <p><span className="font-medium">Phone:</span> {buyerInfo.phone}</p>
+          <div className="space-y-5">
+            <div className="checkout-steps mb-6">
+              <div className="flex items-center justify-between">
+                <div className="step-item flex flex-col items-center">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center mb-1 bg-gray-100">
+                    <CartIcon size={16} className="text-gray-500" />
+                  </div>
+                  <div className="text-xs text-gray-500">Cart</div>
+                </div>
+                <div className="step-line flex-1 h-1 mx-2" style={{ backgroundColor: themeColor }}></div>
+                <div className="step-item flex flex-col items-center">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center mb-1 bg-gray-100">
+                    <Check size={16} className="text-gray-500" />
+                  </div>
+                  <div className="text-xs text-gray-500">Details</div>
+                </div>
+                <div className="step-line flex-1 h-1 mx-2" style={{ backgroundColor: themeColor }}></div>
+                <div className="step-item flex flex-col items-center">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center mb-1" style={{ backgroundColor: themeColor }}>
+                    <motion.div
+                      initial={{ scale: 0.5 }}
+                      animate={{ scale: 1 }}
+                    >
+                      <CreditCard size={16} className="text-white" />
+                    </motion.div>
+                  </div>
+                  <div className="text-xs font-medium" style={{ color: themeColor }}>Confirm</div>
+                </div>
               </div>
             </div>
             
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <h4 className="font-medium mb-2">Items ({productsInCart.length})</h4>
-              <div className="max-h-40 overflow-y-auto pr-2">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+              className="p-5 rounded-2xl shadow-md bg-white border mb-4"
+              style={{ borderColor: `${themeColor}20` }}
+            >
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: themeColor }}>
+                <Lock size={18} />
+                Order Summary
+              </h3>
+              
+              <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                <h4 className="font-medium mb-3 text-gray-700">Your Information</h4>
+                <div className="text-sm space-y-2">
+                  <div className="flex items-center">
+                    <span className="font-medium w-16 text-gray-600">Name:</span> 
+                    <span className="text-gray-800">{buyerInfo.name}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="font-medium w-16 text-gray-600">Email:</span> 
+                    <span className="text-gray-800">{buyerInfo.email}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="font-medium w-16 text-gray-600">Phone:</span> 
+                    <span className="text-gray-800">{buyerInfo.phone}</span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+            
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="p-5 rounded-2xl shadow-md bg-white border"
+              style={{ borderColor: `${themeColor}20` }}
+            >
+              <h4 className="font-medium mb-3 flex items-center gap-2 text-gray-700">
+                <ShoppingBag size={18} className="text-gray-600" />
+                Order Items ({productsInCart.length})
+              </h4>
+              <div className="max-h-60 overflow-y-auto pr-2 space-y-3">
                 {productsInCart.map(product => (
-                  <div key={product.id} className="flex justify-between items-center py-2 border-b">
+                  <div key={product.id} className="flex items-center justify-between py-3 border-b" style={{ borderColor: `${themeColor}15` }}>
                     <div className="flex items-center">
-                      <div className="w-8 h-8 bg-gray-100 rounded-md overflow-hidden mr-2">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden mr-3 shadow-sm border" style={{ borderColor: `${themeColor}20` }}>
                         {product.image_urls && product.image_urls.length > 0 ? (
                           <img 
                             src={product.image_urls[0]} 
@@ -273,41 +406,36 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                             className="w-full h-full object-cover" 
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center">
+                          <div className="w-full h-full flex items-center justify-center bg-gray-100">
                             <span className="text-xs text-gray-400">No img</span>
                           </div>
                         )}
                       </div>
-                      <span className="text-sm">{product.name} × {product.cartQuantity}</span>
+                      <div>
+                        <div className="text-sm font-medium line-clamp-1">{product.name}</div>
+                        <div className="text-xs text-gray-500">Qty: {product.cartQuantity}</div>
+                      </div>
                     </div>
-                    <span className="text-sm font-medium">
+                    <span className="text-sm font-medium" style={{ color: themeColor }}>
                       {formatPrice(Number(product.discount_price || product.main_price) * product.cartQuantity)}
                     </span>
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           </div>
         );
       
       default:
         return (
           <div className="space-y-5">
-            {buyerInfoSaved && (
-              <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-4 rounded">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <Check size={18} className="text-green-500" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-green-700">Your information is saved. Continue shopping or proceed to checkout when ready.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            
+       
             {infoMessage && !buyerInfoSaved && (
-              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 rounded">
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 rounded-lg"
+              >
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <Info size={18} className="text-blue-500" />
@@ -316,7 +444,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                     <p className="text-sm text-blue-700">{infoMessage}</p>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
             
             <AnimatePresence>
@@ -359,7 +487,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                         <div className="flex justify-between">
                           <h3 className="font-medium text-gray-900 line-clamp-2 pr-2">{product.name}</h3>
                           <motion.button
-                            whileHover={{ scale: 1.1 }}
+                            whileHover={{ scale: 1.1, backgroundColor: "#FEE2E2" }}
                             whileTap={{ scale: 0.9 }}
                             onClick={() => handleRemoveItem(product.id)}
                             className="text-gray-400 hover:text-red-500 transition-colors p-1.5 rounded-full bg-white shadow-sm border border-gray-100"
@@ -369,16 +497,16 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                         </div>
 
                         <div className="flex items-center mt-2">
-                          <span className="font-semibold text-lg" style={{ color: themeColor }}>
-                            ₦{Number(product.discount_price || product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                          </span>
-                          {Number(product.main_price) > Number(product.discount_price || 0) && (
-                            <span className="text-xs text-gray-400 line-through ml-2">
-                              ₦{Number(product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                            </span>
-                          )}
-                        </div>
-
+                      <span className="font-semibold text-lg" style={{ color: themeColor }}>
+                        ₦{Number(product.discount_price || product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                      </span>
+            
+                      {product.discount_price && Number(product.main_price) > Number(product.discount_price) && (
+                        <span className="text-xs text-gray-400 line-through ml-2">
+                          ₦{Number(product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </span>
+                      )}
+                    </div>
                         <div className="flex items-center justify-between mt-3">
                           <div className="flex items-center border rounded-full bg-white overflow-hidden shadow-sm" style={{ borderColor: `${themeColor}30` }}>
                             <motion.button
@@ -416,12 +544,51 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                 </motion.div>
               ))}
             </AnimatePresence>
+            
+            {/* Empty Cart State */}
+            {productsInCart.length === 0 && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center text-center py-10"
+              >
+                <motion.div
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1, rotateY: [0, 10, 0, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                  className="w-32 h-32 rounded-full flex items-center justify-center mb-6 relative"
+                  style={{ backgroundColor: `${themeColor}10` }}
+                >
+                  <div className="absolute inset-0 rounded-full" style={{ 
+                    border: `3px dashed ${themeColor}30`,
+                    animation: 'spin 15s linear infinite'
+                  }} />
+                  <ShoppingBag size={48} style={{ color: themeColor }} />
+                </motion.div>
+                <h3 className="text-gray-800 font-semibold text-xl mb-3">Your cart is empty</h3>
+                <p className="text-gray-500 max-w-xs mx-auto mb-6">
+                  Looks like you haven't added any products to your cart yet. Browse our products and find something you like!
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={onClose}
+                  className="px-8 py-3.5 rounded-full text-sm font-medium shadow-md flex items-center"
+                  style={{
+                    backgroundImage: `linear-gradient(135deg, ${themeColor}, ${adjustColorLightness(themeColor, 0.8)})`,
+                    color: "white",
+                  }}
+                >
+                  <ArrowLeft size={16} className="mr-2" />
+                  Discover Products
+                </motion.button>
+              </motion.div>
+            )}
           </div>
         );
     }
   };
 
-  // Render bottom action buttons based on checkout step
   const renderActionButtons = () => {
     switch (checkoutStep) {
       case 'buyer-info':
@@ -431,10 +598,10 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleSaveBuyerInfo}
-              disabled={savingInfo || !buyerInfo.name || !buyerInfo.email || !buyerInfo.phone}
-              className="w-full py-3 rounded-full font-medium text-white flex items-center justify-center"
+              disabled={savingInfo || !isBuyerInfoValid}
+              className="w-full py-3 rounded-full font-medium text-white flex items-center justify-center shadow-md"
               style={{ 
-                backgroundColor: (!buyerInfo.name || !buyerInfo.email || !buyerInfo.phone) 
+                backgroundColor: (!isBuyerInfoValid) 
                   ? '#CCCCCC'
                   : themeColor 
               }}
@@ -460,28 +627,30 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleBackToCart}
-                className="flex-1 py-3 rounded-full font-medium border"
+                className="flex-1 py-3 rounded-full font-medium border flex items-center justify-center"
                 style={{
                   backgroundColor: "white",
                   color: themeColor,
                   borderColor: `${themeColor}30`
                 }}
               >
+                <ArrowLeft size={18} className="mr-2" />
                 Back to Cart
               </motion.button>
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleBuyerInfoNext}
-                disabled={!buyerInfo.name || !buyerInfo.email || !buyerInfo.phone}
-                className="flex-1 py-3 rounded-full font-medium text-white"
+                disabled={!isBuyerInfoValid}
+                className="flex-1 py-3 rounded-full font-medium text-white flex items-center justify-center shadow-md"
                 style={{ 
-                  backgroundColor: (!buyerInfo.name || !buyerInfo.email || !buyerInfo.phone) 
+                  backgroundColor: (!isBuyerInfoValid) 
                     ? '#CCCCCC'
                     : themeColor 
                 }}
               >
                 Review Order
+                <ArrowRight size={18} className="ml-2" />
               </motion.button>
             </div>
           </div>
@@ -494,13 +663,14 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setCheckoutStep('buyer-info')}
-              className="flex-1 py-3 rounded-full font-medium border"
+              className="flex-1 py-3 rounded-full font-medium border flex items-center justify-center"
               style={{
                 backgroundColor: "white",
                 color: themeColor,
                 borderColor: `${themeColor}30`
               }}
             >
+              <ArrowLeft size={18} className="mr-2" />
               Edit Info
             </motion.button>
             <motion.button
@@ -508,8 +678,10 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
               whileTap={{ scale: 0.98 }}
               onClick={handleCompleteCheckout}
               disabled={checkoutLoading}
-              className="flex-1 py-3 rounded-full font-medium text-white"
-              style={{ backgroundColor: themeColor }}
+              className="flex-1 py-3 rounded-full font-medium text-white flex items-center justify-center shadow-md"
+              style={{ 
+                backgroundImage: `linear-gradient(135deg, ${themeColor}, ${adjustColorLightness(themeColor, 0.8)})` 
+              }}
             >
               {checkoutLoading ? (
                 <span className="flex items-center justify-center">
@@ -520,7 +692,10 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                   Processing...
                 </span>
               ) : (
-                "Complete Order"
+                <>
+                  Complete Order
+                  <Lock size={16} className="ml-2" />
+                </>
               )}
             </motion.button>
           </div>
@@ -533,9 +708,12 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleProceedToCheckout}
+              disabled={productsInCart.length === 0}
               className="w-full py-4 rounded-full font-medium text-white flex items-center justify-center shadow-lg"
               style={{ 
-                backgroundImage: `linear-gradient(135deg, ${themeColor}, ${themeColor}dd)`,
+                backgroundImage: productsInCart.length === 0 
+                  ? 'linear-gradient(135deg, #cccccc, #aaaaaa)'
+                  : `linear-gradient(135deg, ${themeColor}, ${adjustColorLightness(themeColor, 0.8)})`,
               }}
             >
               <CreditCard size={20} className="mr-2" />
@@ -561,7 +739,6 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     }
   };
 
-  // Get the title based on the checkout step
   const getHeaderTitle = () => {
     switch (checkoutStep) {
       case 'buyer-info':
@@ -573,6 +750,22 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     }
   };
 
+  function adjustColorLightness(hex: string, factor: number): string {
+    try {
+      let r = Number.parseInt(hex.slice(1, 3), 16)
+      let g = Number.parseInt(hex.slice(3, 5), 16)
+      let b = Number.parseInt(hex.slice(5, 7), 16)
+
+      r = Math.min(255, Math.round(r * factor))
+      g = Math.min(255, Math.round(g * factor))
+      b = Math.min(255, Math.round(b * factor))
+
+      return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`
+    } catch (e) {
+      return hex
+    }
+  }
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -583,7 +776,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4, ease: "easeInOut" }}
             className="fixed inset-0 bg-black z-40"
-            onClick={onClose}
+            onClick={handleClose}
           />
 
           <motion.div
@@ -591,20 +784,21 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 350, damping: 35 }}
-            className="fixed right-0 top-0 h-full w-full max-w-full sm:max-w-md bg-white shadow-2xl z-50 flex flex-col"
-            style={{ borderTopLeftRadius: "24px", borderBottomLeftRadius: "24px" }}
+            className="fixed right-0 top-0 h-full w-full sm:w-[480px] bg-white shadow-2xl z-50 flex flex-col sm:rounded-l-[24px]"
           >
             <div
               className="px-6 py-5 flex justify-between items-center"
               style={{ 
                 borderBottom: `1px solid ${themeColor}15`,
-                background: `linear-gradient(to right, ${themeColor}05, ${themeColor}15)` 
+                background: `linear-gradient(135deg, ${themeColor}05, ${themeColor}15)` 
               }}
             >
               <div className="flex items-center">
                 <div
                   className="w-12 h-12 rounded-full flex items-center justify-center mr-4 shadow-md"
-                  style={{ backgroundColor: themeColor }}
+                  style={{ 
+                    backgroundImage: `linear-gradient(135deg, ${themeColor}, ${adjustColorLightness(themeColor, 0.8)})` 
+                  }}
                 >
                   <CartIcon size={22} className="text-white" />
                 </div>
@@ -619,47 +813,19 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                   </p>
                 </div>
               </div>
-              <button
-                onClick={onClose}
+              <motion.button
+                whileHover={{ scale: 1.05, backgroundColor: `${themeColor}25` }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleClose}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-colors hover:bg-gray-100"
                 style={{ backgroundColor: `${themeColor}15` }}
               >
                 <X size={20} className="text-gray-600" />
-              </button>
+              </motion.button>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-6">
-              {productsInCart.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                  <motion.div
-                    initial={{ scale: 0.8, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="w-28 h-28 rounded-full flex items-center justify-center mb-6 shadow-lg"
-                    style={{ backgroundColor: `${themeColor}15` }}
-                  >
-                    <ShoppingBag size={42} style={{ color: themeColor }} />
-                  </motion.div>
-                  <h3 className="text-gray-800 font-semibold text-xl">Your cart is empty</h3>
-                  <p className="text-gray-500 mt-3 max-w-xs">
-                    Looks like you haven't added any products to your cart yet.
-                  </p>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={onClose}
-                    className="mt-8 px-8 py-3.5 rounded-full text-sm font-medium shadow-md"
-                    style={{
-                      backgroundImage: `linear-gradient(135deg, ${themeColor}, ${themeColor}dd)`,
-                      color: "white",
-                    }}
-                  >
-                    Discover Products
-                  </motion.button>
-                </div>
-              ) : (
-                renderCheckoutContent()
-              )}
+              {renderCheckoutContent()}
             </div>
 
             {productsInCart.length > 0 && (

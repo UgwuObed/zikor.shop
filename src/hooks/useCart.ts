@@ -115,14 +115,12 @@ export default function useCart() {
       setLoading(true);
       setError(null);
       
-      console.log(`Updating cart item ${productId} to quantity ${newQuantity}`);
       
       const response = await apiClient.put(`/cart/item/${productId}`, {
         quantity: newQuantity
       });
       
       if (response.data && response.data.items) {
-        console.log('Server returned updated cart items:', response.data.items);
         setCartItems(response.data.items);
       } else {
         console.warn('Server did not return updated cart items, updating locally');
@@ -138,7 +136,7 @@ export default function useCart() {
       console.error('Error updating cart item:', err);
       
       if (err instanceof Error && (err as any).response && (err as any).response.status === 404) {
-        console.log('Item not found, attempting to add item instead');
+        // console.log('Item not found, attempting to add item instead');
         try {
           const addResponse = await apiClient.post('/cart/add', {
             product_id: productId,

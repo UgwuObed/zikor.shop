@@ -626,65 +626,71 @@ const StorefrontHeader = ({
         )}
       </AnimatePresence>
 
-      {/* Enhanced floating cart button with animations */}
-      <motion.div
-        className="fixed bottom-6 right-6 z-30 md:hidden"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.8, type: "spring", stiffness: 260, damping: 20 }}
+{/* Enhanced floating cart button with outside badge */}
+<motion.div
+  className="fixed bottom-6 right-6 z-30 md:hidden"
+  initial={{ scale: 0, opacity: 0 }}
+  animate={{ scale: 1, opacity: 1 }}
+  transition={{ delay: 0.8, type: "spring", stiffness: 260, damping: 20 }}
+>
+  <div className="relative">
+    <motion.button
+      onClick={onCartClick}
+      className="w-16 h-16 rounded-full shadow-xl flex items-center justify-center relative overflow-hidden"
+      style={{ 
+        background: `linear-gradient(135deg, ${adjustColorLightness(themeColor, 1.1)}, ${themeColor})`,
+        boxShadow: `0 10px 25px -5px ${themeColor}60` 
+      }}
+      whileHover={{ scale: 1.1, boxShadow: `0 15px 30px -10px ${themeColor}80` }}
+      whileTap={{ scale: 0.95 }}
+    >
+      {/* Animated background ripple effect */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 opacity-20">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-white"
+              initial={{ scale: 0, x: "50%", y: "50%" }}
+              animate={{ 
+                scale: 2.5,
+                opacity: [0, 0.2, 0],
+              }}
+              transition={{ 
+                duration: 2,
+                delay: i * 1, 
+                repeat: Infinity,
+                repeatDelay: 1
+              }}
+              style={{
+                width: "100%",
+                height: "100%",
+                top: "-50%",
+                left: "-50%",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+      <ShoppingCart size={26} className="text-white" />
+    </motion.button>
+    
+    {/* Badge moved outside the button overflow context */}
+    {cartCount > 0 && (
+      <div 
+        className="absolute -top-3 -right-3 bg-white rounded-full h-7 flex items-center justify-center text-xs font-bold shadow-md z-10"
+        style={{ 
+          color: themeColor,
+          border: `2px solid ${themeColor}`,
+          minWidth: '28px',
+          padding: cartCount >= 10 ? '0 6px' : '0'
+        }}
       >
-        <motion.button
-          onClick={onCartClick}
-          className="w-14 h-14 rounded-full shadow-lg flex items-center justify-center relative overflow-hidden"
-          style={{ 
-            background: `linear-gradient(135deg, ${adjustColorLightness(themeColor, 1.1)}, ${themeColor})`,
-            boxShadow: `0 4px 20px ${themeColor}60` 
-          }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          {/* Animated background ripple effect */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute inset-0 opacity-20">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute rounded-full bg-white"
-                  initial={{ scale: 0, x: "50%", y: "50%" }}
-                  animate={{ 
-                    scale: 2.5,
-                    opacity: [0, 0.2, 0],
-                  }}
-                  transition={{ 
-                    duration: 2,
-                    delay: i * 1, 
-                    repeat: Infinity,
-                    repeatDelay: 1
-                  }}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    top: "-50%",
-                    left: "-50%",
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
-          <ShoppingCart size={22} className="text-white" />
-          {cartCount > 0 && (
-            <motion.span
-              key={cartCount}
-              initial={{ scale: 0.5 }}
-              animate={{ scale: 1 }}
-              className="absolute -top-2 -right-2 w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold text-white bg-red-500 border-2 border-white"
-            >
-              {cartCount}
-            </motion.span>
-          )}
-        </motion.button>
-      </motion.div>
+        {cartCount > 99 ? "99+" : cartCount}
+      </div>
+    )}
+  </div>
+</motion.div>
     </>
   )
 }
