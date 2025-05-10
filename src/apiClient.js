@@ -8,6 +8,25 @@ const apiClient = axios.create({
   },
 });
 
+apiClient.interceptors.request.use(config => {
+  const cartToken = localStorage.getItem('cart_token');
+  if (cartToken) {
+    config.headers['X-Cart-Token'] = cartToken;
+  }
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
+
+// Add interceptor to save cart token from responses
+apiClient.interceptors.response.use(response => {
+  if (response.data && response.data.cart && response.data.cart.cart_token) {
+    localStorage.setItem('cart_token', response.data.cart.cart_token);
+  }
+  return response;
+}, error => {
+  return Promise.reject(error);
+});
 
 apiClient.interceptors.request.use(
   (config) => {

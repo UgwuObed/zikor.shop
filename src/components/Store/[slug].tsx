@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/router"
 import Head from "next/head"
-import useCart from "../../hooks/useCart" // Import the custom cart hook
+import useCart from "../../hooks/useCart" 
 import { getSubdomain } from "../../../utils/subdomain"
 import apiClient from '../../apiClient'
 import StorefrontHeader from "../Storeview/header"
@@ -170,7 +170,6 @@ const StorefrontPage = () => {
     setShowProductModal(true)
   }
 
-  // Handle adding product to cart and pass the product for notification
   const handleAddToCart = (productId: number, quantity = 1) => {
     const product = storefrontData?.products.find(p => p.id === productId)
     if (product) {
@@ -178,18 +177,17 @@ const StorefrontPage = () => {
     }
   }
   
-  // Handle saving buyer info - immediately saves to database
+
   interface BuyerInfo {
     name: string
     email: string
     phone: string
-    address?: string // Make 'address' optional to match the expected type
+    address?: string 
   }
 
   const handleSaveBuyerInfo = async (info: BuyerInfo) => {
     try {
       await saveBuyerInfo(info)
-      console.log('Buyer info saved successfully')
     } catch (error) {
       console.error('Failed to save buyer info:', error)
     }

@@ -100,7 +100,7 @@ export default function useCart() {
           setTimeout(() => setShowNotification(false), 3000);
         }
         
-        setShowCart(true);
+        setShowCart(false);
       }
     } catch (err) {
       setError('Failed to add item to cart');
