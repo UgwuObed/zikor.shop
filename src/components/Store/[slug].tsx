@@ -1,13 +1,11 @@
 "use client"
 
-import type React from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/router"
-import { useState, useEffect, useMemo } from "react"
 import Head from "next/head"
-import { motion } from "framer-motion"
-import { Menu, X } from "lucide-react"
+import useCart from "../../hooks/useCart" // Import the custom cart hook
 import { getSubdomain } from "../../../utils/subdomain"
-
+import apiClient from '../../apiClient'
 import StorefrontHeader from "../Storeview/header"
 import ProductCard from "../Storeview/card"
 import ShoppingCart from "../Storeview/cart"
@@ -16,9 +14,6 @@ import ProductSearch from "../Storeview/search"
 import ProductDetailModal from "../Storeview/modal"
 import StorefrontFooter from "../Storeview/footer"
 import CartNotification from "../Storeview/notification"
-
-
-
 
 interface StorefrontData {
   id: number
@@ -53,45 +48,56 @@ interface Product {
   }
 }
 
-interface Category {
-  id: string | number
-  name: string
-}
-
 interface StorefrontResponse {
   storefront: StorefrontData
   products: Product[]
 }
 
-const  StorefrontPage = () => {
+const StorefrontPage = () => {
   const router = useRouter()
   const { slug: routerSlug } = router.query
 
+  // Storefront data state
   const [storefrontData, setStorefrontData] = useState<StorefrontResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [cartItems, setCartItems] = useState<{ id: number; quantity: number }[]>([])
-  const [showCart, setShowCart] = useState(false)
+  const [effectiveSlug, setEffectiveSlug] = useState<string | null>(null)
+  
+  // Product display state
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000])
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showProductModal, setShowProductModal] = useState(false)
-  const [showNotification, setShowNotification] = useState(false);
-  const [notificationProduct, setNotificationProduct] = useState<Product | null>(null);
-  const [effectiveSlug, setEffectiveSlug] = useState<string | null>(null)
+  
+  // Use the updated cart hook to manage cart state and operations
+  const {
+    cartItems,
+    cartCount,
+    loading: cartLoading,
+    error: cartError,
+    buyerInfo,
+    buyerInfoSaved,
+    showCart,
+    showNotification,
+    notificationProduct,
+    addToCart,
+    updateCartItemQuantity,
+    removeFromCart,
+    saveBuyerInfo,
+    checkout,
+    setShowCart,
+    setShowNotification
+  } = useCart();
 
-
+  // Determine the storefront slug from router or subdomain
   useEffect(() => {
-
     console.log('Store page loaded with slug:', routerSlug)
-    // If we have a slug from the router, use it
     if (routerSlug && typeof routerSlug === 'string') {
       setEffectiveSlug(routerSlug)
       return
     }
     
-    // Otherwise check for a subdomain
     if (typeof window !== 'undefined') {
       const subdomainSlug = getSubdomain(window.location.hostname)
       if (subdomainSlug && subdomainSlug !== 'www') {
@@ -100,23 +106,23 @@ const  StorefrontPage = () => {
     }
   }, [routerSlug])
 
-useEffect(() => {
+  // Fetch storefront data
+  useEffect(() => {
     if (!effectiveSlug) return
     
     async function fetchStorefront() {
       try {
         setLoading(true)
-        const response = await fetch(`/api/storefronts/${effectiveSlug}`)
+        const response = await apiClient.get(`/store/${effectiveSlug}`)
 
-        if (!response.ok) {
-          throw new Error(`Failed to load storefront: ${response.statusText}`)
+        if (!response.data) {
+          throw new Error('Failed to load storefront')
         }
 
-        const data = await response.json()
-        setStorefrontData(data)
+        setStorefrontData(response.data)
 
-        if (data.products.length > 0) {
-          const prices = data.products.map((p: { discount_price: any }) => Number(p.discount_price))
+        if (response.data.products.length > 0) {
+          const prices = response.data.products.map((p: { discount_price: any }) => Number(p.discount_price))
           setPriceRange([Math.min(...prices), Math.max(...prices)])
         }
       } catch (err) {
@@ -129,94 +135,88 @@ useEffect(() => {
     fetchStorefront()
   }, [effectiveSlug])
 
-  const themeColor = useMemo(() => {
-    if (!storefrontData) return "#6366f1"
-    return storefrontData.storefront.color_theme || "#6366f1"
-  }, [storefrontData])
+  // Get theme color from storefront data
+  const themeColor = storefrontData?.storefront.color_theme || "#6366f1"
 
-  const categories = useMemo(() => {
-    if (!storefrontData) return []
-    const uniqueCategories = Array.from(new Set(storefrontData.products.map((p) => p.category.name))).map(
-      (name, index) => ({
+  // Extract unique categories from products
+  const categories = storefrontData?.products
+    ? Array.from(
+        new Set(storefrontData.products.map((p) => p.category.name))
+      ).map((name, index) => ({
         id: index,
         name: name,
-      }),
-    )
-    return uniqueCategories
-  }, [storefrontData])
+      }))
+    : []
 
-  const filteredProducts = useMemo(() => {
-    if (!storefrontData) return []
+  // Filter products based on selected category and price range
+  const filteredProducts = storefrontData?.products
+    ? storefrontData.products.filter((product) => {
+        if (selectedCategory && product.category.name !== selectedCategory) {
+          return false
+        }
 
-    return storefrontData.products.filter((product) => {
-      if (selectedCategory && product.category.name !== selectedCategory) {
-        return false
-      }
+        const price = Number(product.discount_price)
+        if (price < priceRange[0] || price > priceRange[1]) {
+          return false
+        }
 
-      const price = Number(product.discount_price)
-      if (price < priceRange[0] || price > priceRange[1]) {
-        return false
-      }
+        return true
+      })
+    : []
 
-      return true
-    })
-  }, [storefrontData, selectedCategory, priceRange])
-
-  const cartCount = useMemo(() => {
-    return cartItems.reduce((total, item) => total + item.quantity, 0)
-  }, [cartItems])
-
-  const addToCart = (productId: number, quantity = 1) => {
-    if (!storefrontData) return;
-    
-    const product = storefrontData.products.find(p => p.id === productId);
-    const existingItemIndex = cartItems.findIndex((item) => item.id === productId);
-  
-    if (existingItemIndex >= 0) {
-      const updatedItems = [...cartItems];
-      updatedItems[existingItemIndex].quantity += quantity;
-      setCartItems(updatedItems);
-    } else {
-      setCartItems([...cartItems, { id: productId, quantity }]);
-    }
-  
-    if (product) {
-      setNotificationProduct(product);
-      setShowNotification(true);
-      setTimeout(() => setShowNotification(false), 3000);
-    }
-    
-    setShowCart(false); 
-  }
-
-  const updateCartItemQuantity = (productId: number, newQuantity: number) => {
-    if (newQuantity <= 0) {
-      removeFromCart(productId)
-      return
-    }
-
-    setCartItems(cartItems.map((item) => (item.id === productId ? { ...item, quantity: newQuantity } : item)))
-  }
-
-  const removeFromCart = (productId: number) => {
-    setCartItems(cartItems.filter((item) => item.id !== productId))
-  }
-
+  // Handle product click to show details modal
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product)
     setShowProductModal(true)
   }
 
+  // Handle adding product to cart and pass the product for notification
+  const handleAddToCart = (productId: number, quantity = 1) => {
+    const product = storefrontData?.products.find(p => p.id === productId)
+    if (product) {
+      addToCart(productId, quantity, product)
+    }
+  }
+  
+  // Handle saving buyer info - immediately saves to database
+  interface BuyerInfo {
+    name: string
+    email: string
+    phone: string
+    address?: string // Make 'address' optional to match the expected type
+  }
+
+  const handleSaveBuyerInfo = async (info: BuyerInfo) => {
+    try {
+      await saveBuyerInfo(info)
+      console.log('Buyer info saved successfully')
+    } catch (error) {
+      console.error('Failed to save buyer info:', error)
+    }
+  }
+
+  // Handle checkout completion
+  const handleCheckout = async (buyerInfo: BuyerInfo) => {
+    try {
+      await checkout(buyerInfo)
+      
+      // After successful checkout, redirect to a success page
+      router.push('/checkout/success')
+    } catch (error) {
+      console.error('Checkout failed:', error)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
+        <div className="text-center">
           <div
             className="w-16 h-16 border-4 border-dashed rounded-full animate-spin mx-auto mb-4"
             style={{ borderTopColor: themeColor }}
           ></div>
-          {/* <h2 className="text-xl font-medium text-gray-600">Loading storefront...</h2> */}
-        </motion.div>
+          <p className="text-gray-500">Loading storefront...</p>
+        </div>
       </div>
     )
   }
@@ -241,7 +241,6 @@ useEffect(() => {
         <meta name="description" content={storefront.tagline || `Shop online at ${storefront.business_name}`} />
       </Head>
 
-      {/* Header with fixed cart */}
       <StorefrontHeader
         storefront={storefront}
         cartCount={cartCount}
@@ -250,14 +249,13 @@ useEffect(() => {
       />
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 min-h-screen">
-        {/* Mobile Filter Toggle */}
+        {/* Mobile filters toggle */}
         <div className="lg:hidden mb-4 flex justify-between items-center">
           <button
             onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
             className="flex items-center text-sm font-medium px-3 py-2 rounded-lg"
             style={{ backgroundColor: `${themeColor}15`, color: themeColor }}
           >
-            {mobileFilterOpen ? <X size={18} className="mr-1" /> : <Menu size={18} className="mr-1" />}
             {mobileFilterOpen ? "Close Filters" : "Show Filters"}
           </button>
 
@@ -265,7 +263,7 @@ useEffect(() => {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
-          {/* Sidebar Filters - hidden on mobile unless toggled */}
+          {/* Filters sidebar */}
           <div className={`${mobileFilterOpen ? "block" : "hidden"} lg:block lg:w-64 flex-shrink-0`}>
             <ProductFilter
               categories={categories}
@@ -285,9 +283,8 @@ useEffect(() => {
             />
           </div>
 
-          {/* Main Content */}
+          {/* Main content */}
           <div className="flex-1">
-            {/* Search Bar */}
             <ProductSearch
               products={products}
               onSelectProduct={(id) => {
@@ -299,13 +296,8 @@ useEffect(() => {
               themeColor={themeColor}
             />
 
-            {/* Products Grid */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="mb-8 sm:mb-12"
-            >
+            {/* Products grid */}
+            <div className="mb-8 sm:mb-12">
               <div className="flex justify-between items-center mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold" style={{ color: themeColor }}>
                   {selectedCategory || "All Products"}
@@ -337,7 +329,7 @@ useEffect(() => {
                     <ProductCard
                       key={product.id}
                       product={product}
-                      onAddToCart={addToCart}
+                      onAddToCart={handleAddToCart}
                       isActive={false}
                       onClick={() => handleProductClick(product)}
                       themeColor={themeColor}
@@ -345,12 +337,12 @@ useEffect(() => {
                   ))}
                 </div>
               )}
-            </motion.div>
+            </div>
           </div>
         </div>
       </main>
 
-      {/* Shopping Cart Sidebar */}
+      {/* Shopping Cart Drawer */}
       <ShoppingCart
         isOpen={showCart}
         onClose={() => setShowCart(false)}
@@ -358,7 +350,10 @@ useEffect(() => {
         products={products}
         onUpdateQuantity={updateCartItemQuantity}
         onRemoveItem={removeFromCart}
+        onCheckout={handleCheckout}
+        onSaveBuyerInfo={handleSaveBuyerInfo}
         themeColor={themeColor}
+        initialBuyerInfo={buyerInfo}
       />
 
       {/* Product Detail Modal */}
@@ -366,11 +361,11 @@ useEffect(() => {
         isOpen={showProductModal}
         onClose={() => setShowProductModal(false)}
         product={selectedProduct}
-        onAddToCart={addToCart}
+        onAddToCart={handleAddToCart}
         themeColor={themeColor}
       />
 
-      {/* Notification for adding to cart */}
+      {/* Cart Notification */}
       {notificationProduct && (
         <CartNotification
           product={notificationProduct}
@@ -380,7 +375,6 @@ useEffect(() => {
         />
       )}
 
-      {/* Footer */}
       <StorefrontFooter storefront={storefront} themeColor={themeColor} />
     </div>
   )
