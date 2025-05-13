@@ -53,6 +53,17 @@ interface StorefrontResponse {
   products: Product[]
 }
 
+interface ShippingFee {
+  id: number;
+  storefront_id: number;
+  name: string;
+  state: string;
+  baseFee: string;
+  additionalFee: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 const StorefrontPage = () => {
   const router = useRouter()
   const { slug: routerSlug } = router.query
@@ -62,13 +73,13 @@ const StorefrontPage = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [effectiveSlug, setEffectiveSlug] = useState<string | null>(null)
-  
-  // Product display state
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000])
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showProductModal, setShowProductModal] = useState(false)
+  const [shippingFees, setShippingFees] = useState<ShippingFee[]>([]);
+
   
   // Use the updated cart hook to manage cart state and operations
   const {
@@ -106,7 +117,25 @@ const StorefrontPage = () => {
     }
   }, [routerSlug])
 
-  // Fetch storefront data
+  
+  useEffect(() => {
+    if (!effectiveSlug) return;
+    
+    async function fetchShippingFees() {
+      try {
+        const response = await apiClient.get(`/store/${effectiveSlug}/shipping-fees`);
+        
+        if (response.data && response.data.shipping_fees) {
+          setShippingFees(response.data.shipping_fees);
+        }
+      } catch (err) {
+        console.error("Failed to load shipping fees:", err);
+      }
+    }
+    
+    fetchShippingFees();
+  }, [effectiveSlug]);
+
   useEffect(() => {
     if (!effectiveSlug) return
     
@@ -346,6 +375,7 @@ const StorefrontPage = () => {
         onClose={() => setShowCart(false)}
         cartItems={cartItems}
         products={products}
+        shippingFees={shippingFees}
         onUpdateQuantity={updateCartItemQuantity}
         onRemoveItem={removeFromCart}
         onCheckout={handleCheckout}

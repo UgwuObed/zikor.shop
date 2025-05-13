@@ -7,6 +7,7 @@ import {
   ShoppingCartIcon as CartIcon, Plus, Minus, CreditCard, Trash2, 
   ArrowLeft, X, ShoppingBag, Save, Check, Info, ArrowRight, Lock
 } from "lucide-react"
+import CheckoutFlow from "./checkout"
 
 interface Product {
   id: number
@@ -21,6 +22,17 @@ interface BuyerInfo {
   name: string
   email: string
   phone: string
+}
+
+interface ShippingFee {
+  id: number;
+  storefront_id: number;
+  name: string;
+  state: string;
+  baseFee: string;
+  additionalFee: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface CartItem {
@@ -39,6 +51,7 @@ interface ShoppingCartProps {
   onSaveBuyerInfo?: (buyerInfo: BuyerInfo) => Promise<void>
   themeColor: string
   initialBuyerInfo?: BuyerInfo
+  shippingFees: ShippingFee[];
 }
 
 const ShoppingCart: React.FC<ShoppingCartProps> = ({
@@ -51,7 +64,8 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
   onCheckout,
   onSaveBuyerInfo,
   themeColor,
-  initialBuyerInfo
+  initialBuyerInfo,
+  shippingFees,
 }) => {
   const [productsInCart, setProductsInCart] = useState<(Product & { cartQuantity: number })[]>([])
   const [isRemoving, setIsRemoving] = useState<number | null>(null)
@@ -67,6 +81,8 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
   const [infoMessage, setInfoMessage] = useState<string | null>(null)
   const [isExiting, setIsExiting] = useState(false)
   const [showSavedMessage, setShowSavedMessage] = useState(false);
+  const [showCheckoutFlow, setShowCheckoutFlow] = useState(false);
+
   
 
   useEffect(() => {
@@ -126,14 +142,27 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     }, 300)
   }
 
+  const handleStartCheckout = () => {
+    if (productsInCart.length === 0) return;
+    
+    setShowCheckoutFlow(true);
+  };
+
   const handleProceedToCheckout = () => {
+    if (productsInCart.length === 0) return;
+    
+    // If buyer info is already saved, show checkout flow directly
     if (buyerInfoSaved && buyerInfo.name && buyerInfo.email && buyerInfo.phone) {
-      setCheckoutStep('confirm')
+      setShowCheckoutFlow(true);
+      // setShowCart(false); 
     } else {
-      setCheckoutStep('buyer-info')
-      setInfoMessage("Please confirm your details before proceeding to checkout.")
+      // Otherwise go to buyer info step first
+      setCheckoutStep('buyer-info');
+      setInfoMessage("Please confirm your details before proceeding to checkout.");
     }
-  }
+  };
+  
+
 
   const handleBackToCart = () => {
     setCheckoutStep('cart')
@@ -704,21 +733,21 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
       default:
         return (
           <>
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={handleProceedToCheckout}
-              disabled={productsInCart.length === 0}
-              className="w-full py-4 rounded-full font-medium text-white flex items-center justify-center shadow-lg"
-              style={{ 
-                backgroundImage: productsInCart.length === 0 
-                  ? 'linear-gradient(135deg, #cccccc, #aaaaaa)'
-                  : `linear-gradient(135deg, ${themeColor}, ${adjustColorLightness(themeColor, 0.8)})`,
-              }}
-            >
-              <CreditCard size={20} className="mr-2" />
-              Proceed to Checkout
-            </motion.button>
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={handleStartCheckout}
+        disabled={productsInCart.length === 0}
+        className="w-full py-4 rounded-full font-medium text-white flex items-center justify-center shadow-lg"
+        style={{ 
+          backgroundImage: productsInCart.length === 0 
+            ? 'linear-gradient(135deg, #cccccc, #aaaaaa)'
+            : `linear-gradient(135deg, ${themeColor}, ${adjustColorLightness(themeColor, 0.8)})`,
+        }}
+      >
+        <CreditCard size={20} className="mr-2" />
+        Proceed to Checkout
+      </motion.button>
 
             <motion.button
               whileHover={{ scale: 1.02 }}
@@ -778,7 +807,33 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
             className="fixed inset-0 bg-black z-40"
             onClick={handleClose}
           />
-
+        {showCheckoutFlow ? (
+          // Render the checkout flow when showCheckoutFlow is true
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "spring", stiffness: 350, damping: 35 }}
+            className="fixed right-0 top-0 h-full w-full sm:w-[480px] bg-white shadow-2xl z-50 flex flex-col sm:rounded-l-[24px]"
+          >
+            <CheckoutFlow
+              themeColor={themeColor}
+              buyerInfo={buyerInfo}
+              cartItems={cartItems}
+              products={products}
+              shippingFees={shippingFees}
+              onUpdateBuyerInfo={(updatedInfo) => {
+                setBuyerInfo(updatedInfo);
+                if (onSaveBuyerInfo) onSaveBuyerInfo(updatedInfo);
+              }}
+              onCheckout={onCheckout}
+              onCancel={() => {
+                setShowCheckoutFlow(false);
+                // setShowCart(true); // Show cart again when canceling checkout
+              }}
+            />
+          </motion.div>
+        ) : (
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
@@ -861,6 +916,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
               </motion.div>
             )}
           </motion.div>
+        )}
         </>
       )}
     </AnimatePresence>
@@ -868,3 +924,4 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
 }
 
 export default ShoppingCart
+

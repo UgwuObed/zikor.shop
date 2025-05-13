@@ -21,6 +21,28 @@ interface BuyerInfo {
   name: string;
   email: string;
   phone: string;
+  address?: string;
+  deliveryMethod?: "pickup" | "delivery";
+  deliveryLocation?: ShippingFee;
+  deliveryNotes?: string;
+  shippingFee?: number;
+}
+
+interface BuyerInfo {
+  name: string;
+  email: string;
+  phone: string;
+}
+
+interface ShippingFee {
+  id: number
+  storefront_id: number
+  name: string
+  state: string
+  baseFee: string
+  additionalFee: string
+  created_at?: string
+  updated_at?: string
 }
 
 export default function useCart() {
@@ -37,6 +59,25 @@ export default function useCart() {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationProduct, setNotificationProduct] = useState<Product | null>(null);
   
+  
+  const calculateShippingFee = (deliveryLocation: ShippingFee | undefined, deliveryMethod: "pickup" | "delivery", cartItems: CartItem[]): number => {
+    if (!deliveryLocation || deliveryMethod === "pickup") {
+      return 0;
+    }
+    
+    // Calculate base fee
+    let fee = Number.parseFloat(deliveryLocation.baseFee);
+    
+    // Calculate additional fee based on total quantity
+    const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+    if (totalQuantity > 1) {
+      const additionalItems = totalQuantity - 1;
+      fee += additionalItems * Number.parseFloat(deliveryLocation.additionalFee);
+    }
+    
+    return fee;
+  };
+
   
   useEffect(() => {
     fetchCart();
@@ -214,6 +255,14 @@ export default function useCart() {
       setError(null);
       
     
+      if (buyerInfo.deliveryMethod === "delivery" && buyerInfo.deliveryLocation && !buyerInfo.shippingFee) {
+        buyerInfo.shippingFee = calculateShippingFee(
+          buyerInfo.deliveryLocation, 
+          buyerInfo.deliveryMethod, 
+          cartItems
+        );
+      }
+
       if (!buyerInfoSaved) {
         await saveBuyerInfo(buyerInfo);
       }

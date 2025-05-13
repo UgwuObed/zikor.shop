@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import EnhancedBusinessHours from './businesshours';
+import ShippingFees from './shipping';
 
 interface BusinessHoursDay {
   open: string;
   close: string;
   closed: boolean;
+}
+
+interface ShippingLocation {
+  name: string;
+  state: string;
+  baseFee: number;
+  additionalFee: number;
 }
 
 interface BankDetails {
@@ -21,6 +29,7 @@ type FormChangeEvent =
 interface SettingsStepProps {
   formData: {
     business_hours: Record<string, BusinessHoursDay>;
+    shipping_fees?: ShippingLocation[];
     bank_details: BankDetails;
     [key: string]: any;
   };
@@ -59,7 +68,7 @@ const SettingsStep: React.FC<SettingsStepProps> = ({
     "Zenith Bank"
   ];
   
-  const [showBusinessHours, setShowBusinessHours] = useState(false);
+
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   
   const handleBusinessHoursChange = (day: string, field: keyof BusinessHoursDay, value: string | boolean) => {
@@ -147,6 +156,22 @@ const SettingsStep: React.FC<SettingsStepProps> = ({
     />
   </motion.div>
 
+
+      {/* Shipping Fees Component */}
+      <motion.div variants={itemVariants}>
+        <ShippingFees
+          shippingFees={formData.shipping_fees || []}
+          onChange={(updatedFees) => {
+            handleChange({
+              target: {
+                name: 'shipping_fees',
+                value: updatedFees
+              }
+            });
+          }}
+        />
+      </motion.div>
+      
       
       {/* Bank Details */}
       <motion.div 
