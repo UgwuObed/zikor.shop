@@ -128,8 +128,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     (total, item) => total + Number(item.discount_price || item.main_price) * item.cartQuantity,
     0,
   )
-  const shipping = subtotal > 0 ? 5 : 0
-  const total = subtotal + shipping
+  const total = subtotal 
 
   const formatPrice = (price: number) => 
     `₦${price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
@@ -808,14 +807,14 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
             onClick={handleClose}
           />
         {showCheckoutFlow ? (
-          // Render the checkout flow when showCheckoutFlow is true
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", stiffness: 350, damping: 35 }}
-            className="fixed right-0 top-0 h-full w-full sm:w-[480px] bg-white shadow-2xl z-50 flex flex-col sm:rounded-l-[24px]"
+            className="fixed inset-0 sm:left-auto sm:right-0 sm:w-full sm:max-w-2xl bg-white shadow-2xl z-50 flex flex-col"
           >
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6">
             <CheckoutFlow
               themeColor={themeColor}
               buyerInfo={buyerInfo}
@@ -832,6 +831,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                 // setShowCart(true); // Show cart again when canceling checkout
               }}
             />
+          </div>
           </motion.div>
         ) : (
           <motion.div
@@ -899,10 +899,10 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                     <span className="text-gray-500">Subtotal</span>
                     <span className="font-medium">{formatPrice(subtotal)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
+                  {/* <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Shipping</span>
                     <span className="font-medium">{formatPrice(shipping)}</span>
-                  </div>
+                  </div> */}
                   <div
                     className="pt-4 mt-2 flex justify-between font-bold text-xl"
                     style={{ borderTop: `1px dashed ${themeColor}30` }}

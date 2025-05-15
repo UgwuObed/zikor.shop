@@ -394,7 +394,7 @@ const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
                     required
                   />
                 </div>
-                <p className="mt-1 text-xs text-gray-500 pl-1">Please enter your full name as it appears on official documents</p>
+                <p className="mt-1 text-xs text-gray-500 pl-1">Please enter your full name</p>
               </div>
               
               <div className="group">
