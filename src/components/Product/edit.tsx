@@ -1,11 +1,10 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
-import { FiTrash2, FiUpload, FiSave } from "react-icons/fi"
+import React, { useState, useEffect } from "react"
+import { FiX, FiUpload } from "react-icons/fi"
 import apiClient from "../../apiClient"
-import type { Product, Category } from "../../types/product"
+import type { Product } from "./types"
+
 
 interface EditProductFormProps {
   product: Product
@@ -13,20 +12,22 @@ interface EditProductFormProps {
   onSave: () => void
 }
 
-export default function EditProductForm({ product, onClose, onSave }: EditProductFormProps) {
+// Export the component as a named export with proper typing
+const EditProductForm: React.FC<EditProductFormProps> = ({ product, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: product.name || "",
-    main_price: product.main_price || 0,
-    discount_price: product.discount_price || "",
-    quantity: product.quantity || 0,
     description: product.description || "",
+    main_price: product.main_price || 0,
+    discount_price: product.discount_price || 0,
+    quantity: product.quantity || 0,
     category_id: product.category?.id || "",
+    image: product.image || "",
   })
-  const [categories, setCategories] = useState<Category[]>([])
-  const [images, setImages] = useState<string[]>(product.image_urls || [])
-  const [newImages, setNewImages] = useState<File[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [categories, setCategories] = useState<{id: string | number, name: string}[]>([])
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [currentImages, setCurrentImages] = useState<string[]>(product.image_urls || [])
+
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -37,7 +38,7 @@ export default function EditProductForm({ product, onClose, onSave }: EditProduc
             Authorization: `Bearer ${accessToken}`,
           },
         })
-        setCategories(response.data.categories)
+        setCategories(response.data.data || [])
       } catch (error) {
         console.error("Error fetching categories:", error)
       }
@@ -49,106 +50,72 @@ export default function EditProductForm({ product, onClose, onSave }: EditProduc
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
-
-    if (errors[name]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev }
-        delete newErrors[name]
-        return newErrors
-      })
-    }
   }
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const filesArray = Array.from(e.target.files)
-      setNewImages((prev) => [...prev, ...filesArray])
+      const newFiles = Array.from(e.target.files)
+      setImageFiles((prev) => [...prev, ...newFiles])
     }
   }
 
-  const removeExistingImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index))
+  const removeImage = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const removeNewImage = (index: number) => {
-    setNewImages((prev) => prev.filter((_, i) => i !== index))
+  const removeCurrentImage = (index: number) => {
+    setCurrentImages((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {}
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Product name is required"
-    }
-
-    if (formData.main_price <= 0) {
-      newErrors.main_price = "Price must be greater than zero"
-    }
-
-    if (formData.quantity < 0) {
-      newErrors.quantity = "Quantity cannot be negative"
-    }
-
-    if (formData.discount_price && Number(formData.discount_price) >= formData.main_price) {
-      newErrors.discount_price = "Discount price must be less than main price"
-    }
-
-    setErrors(newErrors)
-    return Object.keys(newErrors).length === 0
-  }
-
-const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-        return;
-    }
-
-    setIsLoading(true);
-    const accessToken = localStorage.getItem("accessToken");
-    let uploadedImageUrls: string[] = [];
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
 
     try {
-        if (newImages.length > 0) {
-            const formData = new FormData();
-            newImages.forEach((file) => formData.append("image", file)); 
-
-            const uploadResponse = await apiClient.post("/upload", formData, {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "multipart/form-data",
-                },
-            });
-            uploadedImageUrls = uploadResponse.data.urls || (Array.isArray(uploadResponse.data) ? uploadResponse.data : [uploadResponse.data.url]).filter(Boolean); // Adjust based on your backend response
+      const accessToken = localStorage.getItem("accessToken")
+      
+      // Create form data for submission
+      const submitData = new FormData()
+      
+      // Add text fields
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          submitData.append(key, value.toString())
         }
+      })
+      
+      // Add current images
+      submitData.append('current_images', JSON.stringify(currentImages))
+      
+      // Add new images
+      imageFiles.forEach((file) => {
+        submitData.append('images[]', file)
+      })
 
-        const productData = {
-            ...formData,
-            image: JSON.stringify([...images, ...uploadedImageUrls]), 
-        };
+      // Send update request
+      await apiClient.put(`/products/${product.id}`, submitData, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      })
 
-        await apiClient.patch(`/products/${product.id}`, productData, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
-            },
-        });
-
-        onSave();
+      onSave()
     } catch (error) {
-        console.error("Error updating product:", error);
-        alert("Failed to update product. Please try again.");
+      console.error("Error updating product:", error)
+      alert("Failed to update product. Please try again.")
     } finally {
-        setIsLoading(false);
+      setIsLoading(false)
     }
-};
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-            Product Name*
+        {/* Product Name */}
+        <div className="col-span-2">
+          <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            Product Name *
           </label>
           <input
             type="text"
@@ -156,15 +123,65 @@ const handleSubmit = async (e: React.FormEvent) => {
             name="name"
             value={formData.name}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 ${
-              errors.name ? "border-red-500" : ""
-            }`}
+            required
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
-          {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+        </div>
+
+        {/* Pricing */}
+        <div>
+          <label htmlFor="main_price" className="block text-sm font-medium text-gray-700 mb-1">
+            Regular Price (₦) *
+          </label>
+          <input
+            type="number"
+            id="main_price"
+            name="main_price"
+            value={formData.main_price}
+            onChange={handleChange}
+            required
+            step="0.01"
+            min="0"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
         </div>
 
         <div>
-          <label htmlFor="category_id" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="discount_price" className="block text-sm font-medium text-gray-700 mb-1">
+            Discount Price (₦)
+          </label>
+          <input
+            type="number"
+            id="discount_price"
+            name="discount_price"
+            value={formData.discount_price || ""}
+            onChange={handleChange}
+            step="0.01"
+            min="0"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+        </div>
+
+        {/* Inventory */}
+        <div>
+          <label htmlFor="quantity" className="block text-sm font-medium text-gray-700 mb-1">
+            Quantity in Stock *
+          </label>
+          <input
+            type="number"
+            id="quantity"
+            name="quantity"
+            value={formData.quantity}
+            onChange={handleChange}
+            required
+            min="0"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
+          />
+        </div>
+
+        {/* Category */}
+        <div>
+          <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">
             Category
           </label>
           <select
@@ -172,7 +189,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             name="category_id"
             value={formData.category_id}
             onChange={handleChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
             <option value="">Select Category</option>
             {categories.map((category) => (
@@ -183,160 +200,97 @@ const handleSubmit = async (e: React.FormEvent) => {
           </select>
         </div>
 
-        <div>
-          <label htmlFor="main_price" className="block text-sm font-medium text-gray-700">
-            Main Price*
+        {/* Description */}
+        <div className="col-span-2">
+          <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            Description
           </label>
-          <input
-            type="number"
-            id="main_price"
-            name="main_price"
-            value={formData.main_price}
+          <textarea
+            id="description"
+            name="description"
+            value={formData.description}
             onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 ${
-              errors.main_price ? "border-red-500" : ""
-            }`}
+            rows={4}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
-          {errors.main_price && <p className="mt-1 text-sm text-red-600">{errors.main_price}</p>}
         </div>
 
-        <div>
-          <label htmlFor="discount_price" className="block text-sm font-medium text-gray-700">
-            Discount Price (Optional)
-          </label>
-          <input
-            type="number"
-            id="discount_price"
-            name="discount_price"
-            value={formData.discount_price}
-            onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 ${
-              errors.discount_price ? "border-red-500" : ""
-            }`}
-          />
-          {errors.discount_price && <p className="mt-1 text-sm text-red-600">{errors.discount_price}</p>}
-        </div>
-
-        <div>
-          <label htmlFor="quantity" className="block text-sm font-medium text-gray-700">
-            Quantity*
-          </label>
-          <input
-            type="number"
-            id="quantity"
-            name="quantity"
-            value={formData.quantity}
-            onChange={handleChange}
-            className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 ${
-              errors.quantity ? "border-red-500" : ""
-            }`}
-          />
-          {errors.quantity && <p className="mt-1 text-sm text-red-600">{errors.quantity}</p>}
-        </div>
-      </div>
-
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-          Description
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          rows={4}
-          value={formData.description}
-          onChange={handleChange}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500"
-        ></textarea>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Product Images</label>
-
-        {/* Existing images */}
-        {images.length > 0 && (
-          <div className="mb-4">
-            <p className="text-xs text-gray-500 mb-2">Current Images</p>
+        {/* Current Images */}
+        {currentImages.length > 0 && (
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Current Images</label>
             <div className="flex flex-wrap gap-4">
-              {images.map((url, idx) => (
-                <div key={idx} className="relative w-24 h-24 border rounded-md overflow-hidden group">
+              {currentImages.map((url, index) => (
+                <div key={`current-${index}`} className="relative w-24 h-24 border rounded-md">
                   <img
-                    src={url || "/placeholder.svg"}
-                    alt={`Product image ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement
-                      target.src = ""
-                    }}
+                    src={url}
+                    alt={`Product image ${index + 1}`}
+                    className="w-full h-full object-contain p-1"
                   />
-                  <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                    <button
-                      type="button"
-                      onClick={() => removeExistingImage(idx)}
-                      className="text-white p-1 hover:text-red-400"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeCurrentImage(index)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                  >
+                    <FiX size={14} />
+                  </button>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* New images preview */}
-        {newImages.length > 0 && (
-          <div className="mb-4">
-            <p className="text-xs text-gray-500 mb-2">New Images</p>
-            <div className="flex flex-wrap gap-4">
-              {newImages.map((file, idx) => (
-                <div key={idx} className="relative w-24 h-24 border rounded-md overflow-hidden group">
+        {/* New Image Upload */}
+        <div className="col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Add New Images</label>
+          <div className="flex items-center">
+            <label
+              htmlFor="image-upload"
+              className="cursor-pointer flex items-center px-4 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200"
+            >
+              <FiUpload className="mr-2" />
+              Choose Images
+            </label>
+            <input
+              id="image-upload"
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handleImageChange}
+              className="hidden"
+            />
+          </div>
+
+          {/* Preview new images */}
+          {imageFiles.length > 0 && (
+            <div className="mt-4 flex flex-wrap gap-4">
+              {imageFiles.map((file, index) => (
+                <div key={`new-${index}`} className="relative w-24 h-24 border rounded-md">
                   <img
-                    src={URL.createObjectURL(file) || "/placeholder.svg"}
-                    alt={`New image ${idx + 1}`}
-                    className="w-full h-full object-cover"
+                    src={URL.createObjectURL(file)}
+                    alt={`New upload ${index + 1}`}
+                    className="w-full h-full object-contain p-1"
                   />
-                  <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                    <button
-                      type="button"
-                      onClick={() => removeNewImage(idx)}
-                      className="text-white p-1 hover:text-red-400"
-                    >
-                      <FiTrash2 />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
+                  >
+                    <FiX size={14} />
+                  </button>
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Upload button */}
-        <div className="mt-2">
-          <label
-            htmlFor="image-upload"
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
-          >
-            <FiUpload className="mr-2 -ml-1 h-5 w-5" />
-            Upload Images
-          </label>
-          <input
-            id="image-upload"
-            name="images"
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="sr-only"
-          />
+          )}
         </div>
       </div>
 
-      <div className="flex justify-end space-x-3">
+      {/* Form Actions */}
+      <div className="mt-8 flex justify-end gap-3">
         <button
           type="button"
           onClick={onClose}
           className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-          disabled={isLoading}
         >
           Cancel
         </button>
@@ -353,7 +307,14 @@ const handleSubmit = async (e: React.FormEvent) => {
                 fill="none"
                 viewBox="0 0 24 24"
               >
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
                 <path
                   className="opacity-75"
                   fill="currentColor"
@@ -363,10 +324,7 @@ const handleSubmit = async (e: React.FormEvent) => {
               Saving...
             </>
           ) : (
-            <>
-              <FiSave className="mr-2 -ml-1" />
-              Save Changes
-            </>
+            <>Save Changes</>
           )}
         </button>
       </div>
@@ -374,4 +332,4 @@ const handleSubmit = async (e: React.FormEvent) => {
   )
 }
 
-
+export default EditProductForm
