@@ -12,7 +12,7 @@ interface EditProductFormProps {
   onSave: () => void
 }
 
-// Export the component as a named export with proper typing
+
 const EditProductForm: React.FC<EditProductFormProps> = ({ product, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: product.name || "",
