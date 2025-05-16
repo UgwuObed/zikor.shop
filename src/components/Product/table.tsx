@@ -1,11 +1,23 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { FiEdit2, FiTrash2, FiEye, FiMoreVertical, FiCheckCircle, FiXCircle, FiAlertCircle } from "react-icons/fi"
+import {
+  FiEdit2,
+  FiTrash2,
+  FiEye,
+  FiMoreVertical,
+  FiCheckCircle,
+  FiXCircle,
+  FiAlertCircle,
+  FiX,
+  FiChevronLeft,
+  FiChevronRight,
+} from "react-icons/fi"
 import { useState } from "react"
 import { useRouter } from "next/router"
 import apiClient from "../../apiClient"
 import type { Product, ProductTableProps } from "./types"
+import EditProductForm from "../Product/edit"
 
 const ProductTable = ({ products, onRefresh }: ProductTableProps) => {
   const router = useRouter()
@@ -13,6 +25,13 @@ const ProductTable = ({ products, onRefresh }: ProductTableProps) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [productToDelete, setProductToDelete] = useState<Product | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+
+  // New state for product detail view
+  const [viewProduct, setViewProduct] = useState<Product | null>(null)
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [productToEdit, setProductToEdit] = useState<Product | null>(null)
 
   const toggleSelectProduct = (id: string | number) => {
     setSelectedProducts((prev) => (prev.includes(id) ? prev.filter((productId) => productId !== id) : [...prev, id]))
@@ -60,12 +79,31 @@ const ProductTable = ({ products, onRefresh }: ProductTableProps) => {
     }
   }
 
+  // New function to open product detail view
+  const openProductView = (product: Product) => {
+    setViewProduct(product)
+    setCurrentImageIndex(0)
+    setIsViewModalOpen(true)
+  }
+
+  const navigateImages = (direction: "next" | "prev") => {
+    if (!viewProduct?.image_urls || viewProduct.image_urls.length <= 1) return
+
+    if (direction === "next") {
+      setCurrentImageIndex((prev) => (prev + 1) % (viewProduct.image_urls?.length || 1))
+    } else {
+      setCurrentImageIndex((prev) => (prev - 1 + (viewProduct.image_urls?.length || 0)) % (viewProduct.image_urls?.length || 1))
+    }
+  }
+
+
   const handleViewProduct = (product: Product) => {
-    router.push(`/dashboard/products/${product.id}`)
+    openProductView(product)
   }
 
   const handleEditProduct = (product: Product) => {
-    router.push(`/dashboard/products/edit/${product.id}`)
+    setProductToEdit(product)
+    setIsEditModalOpen(true)
   }
 
   const getStockStatusDisplay = (quantity: number) => {
@@ -93,6 +131,14 @@ const ProductTable = ({ products, onRefresh }: ProductTableProps) => {
   const formatPrice = (price: number | undefined) => {
     if (!price) return "₦0.00"
     return `₦${Number.parseFloat(price.toString()).toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  }
+
+  // Helper function to safely get image URL
+  const getProductImage = (product: Product, index = 0) => {
+    if (!product.image_urls || !Array.isArray(product.image_urls) || product.image_urls.length === 0) {
+      return ""
+    }
+    return product.image_urls[index]
   }
 
   return (
@@ -135,14 +181,14 @@ const ProductTable = ({ products, onRefresh }: ProductTableProps) => {
                   transition={{ delay: index * 0.05 }}
                   whileHover={{ backgroundColor: "rgba(249, 250, 251, 1)" }}
                   className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => openProductView(product)}
                 >
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
                       checked={selectedProducts.includes(product.id)}
                       onChange={() => toggleSelectProduct(product.id)}
                       className="rounded text-purple-600 focus:ring-purple-500"
-                      onClick={(e) => e.stopPropagation()}
                     />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -150,11 +196,11 @@ const ProductTable = ({ products, onRefresh }: ProductTableProps) => {
                       <div className="flex-shrink-0 h-10 w-10">
                         <img
                           className="h-10 w-10 rounded object-contain bg-gray-100"
-                          src={product.image_urls && product.image_urls[0]}
+                          src={getProductImage(product) || "/placeholder.svg"}
                           alt={product.name}
                           onError={(e) => {
                             const target = e.target as HTMLImageElement
-                            target.src = "/placeholder-product.jpg"
+                            target.src = ""
                           }}
                         />
                       </div>
@@ -182,18 +228,36 @@ const ProductTable = ({ products, onRefresh }: ProductTableProps) => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-500">{product.category?.name}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td
+                    className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div className="flex justify-end space-x-3">
                       <button
-                        onClick={() => handleViewProduct(product)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openProductView(product)
+                        }}
                         className="text-purple-600 hover:text-purple-900"
                       >
                         <FiEye />
                       </button>
-                      <button onClick={() => handleEditProduct(product)} className="text-blue-600 hover:text-blue-900">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleEditProduct(product)
+                        }}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
                         <FiEdit2 />
                       </button>
-                      <button onClick={() => openDeleteDialog(product)} className="text-red-600 hover:text-red-900">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openDeleteDialog(product)
+                        }}
+                        className="text-red-600 hover:text-red-900"
+                      >
                         <FiTrash2 />
                       </button>
                     </div>
@@ -217,9 +281,10 @@ const ProductTable = ({ products, onRefresh }: ProductTableProps) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.05 }}
               className="bg-white border-b border-gray-200 p-4"
+              onClick={() => openProductView(product)}
             >
               <div className="flex items-start">
-                <div className="flex-shrink-0 mr-4">
+                <div className="flex-shrink-0 mr-4" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={selectedProducts.includes(product.id)}
@@ -233,11 +298,11 @@ const ProductTable = ({ products, onRefresh }: ProductTableProps) => {
                     <div className="h-12 w-12 rounded bg-gray-100 mr-3 flex-shrink-0">
                       <img
                         className="h-full w-full rounded object-contain"
-                        src={product.image_urls && product.image_urls[0]}
+                        src={getProductImage(product) || "/placeholder.svg"}
                         alt={product.name}
                         onError={(e) => {
                           const target = e.target as HTMLImageElement
-                          target.src = "/placeholder-product.jpg"
+                          target.src = ""
                         }}
                       />
                     </div>
@@ -264,8 +329,14 @@ const ProductTable = ({ products, onRefresh }: ProductTableProps) => {
                   </div>
                 </div>
 
-                <div className="flex-shrink-0 ml-2 relative">
-                  <button className="p-1" onClick={() => setProductToDelete(product)}>
+                <div className="flex-shrink-0 ml-2 relative" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    className="p-1"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setProductToDelete(product === productToDelete ? null : product)
+                    }}
+                  >
                     <FiMoreVertical className="text-gray-500" />
                   </button>
 
@@ -273,19 +344,28 @@ const ProductTable = ({ products, onRefresh }: ProductTableProps) => {
                     <div className="absolute right-0 mt-1 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
                       <div className="py-1">
                         <button
-                          onClick={() => handleViewProduct(product)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openProductView(product)
+                          }}
                           className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                           <FiEye className="mr-2" /> View
                         </button>
                         <button
-                          onClick={() => handleEditProduct(product)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleEditProduct(product)
+                          }}
                           className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         >
                           <FiEdit2 className="mr-2" /> Edit
                         </button>
                         <button
-                          onClick={() => openDeleteDialog(product)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openDeleteDialog(product)
+                          }}
                           className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                         >
                           <FiTrash2 className="mr-2" /> Delete
@@ -299,6 +379,146 @@ const ProductTable = ({ products, onRefresh }: ProductTableProps) => {
           )
         })}
       </div>
+
+      {/* Product View Modal */}
+      {isViewModalOpen && viewProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">Product Details</h3>
+              <button onClick={() => setIsViewModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                <FiX />
+              </button>
+            </div>
+
+            <div className="flex flex-col md:flex-row p-6 overflow-y-auto">
+              {/* Image Gallery */}
+              <div className="md:w-1/2 mb-6 md:mb-0 md:pr-6 flex flex-col">
+                <div className="relative bg-gray-100 rounded-lg h-64 md:h-80 flex items-center justify-center">
+                  {viewProduct.image_urls && viewProduct.image_urls.length > 0 ? (
+                    <>
+                      <img
+                        src={viewProduct.image_urls[currentImageIndex] || "/placeholder.svg"}
+                        alt={`${viewProduct.name} - image ${currentImageIndex + 1}`}
+                        className="max-h-full max-w-full object-contain p-2"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.src = ""
+                        }}
+                      />
+
+                      {/* Navigation arrows */}
+                      {viewProduct.image_urls.length > 1 && (
+                        <>
+                          <button
+                            onClick={() => navigateImages("prev")}
+                            className="absolute left-2 bg-white rounded-full p-2 shadow-md hover:bg-gray-100"
+                          >
+                            <FiChevronLeft />
+                          </button>
+                          <button
+                            onClick={() => navigateImages("next")}
+                            className="absolute right-2 bg-white rounded-full p-2 shadow-md hover:bg-gray-100"
+                          >
+                            <FiChevronRight />
+                          </button>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <img
+                      src=""
+                      alt={viewProduct.name}
+                      className="max-h-full max-w-full object-contain p-2"
+                    />
+                  )}
+                </div>
+
+                {/* Thumbnail row */}
+                {viewProduct.image_urls && viewProduct.image_urls.length > 1 && (
+                  <div className="flex flex-wrap gap-2 mt-4 justify-center">
+                    {viewProduct.image_urls.map((url, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentImageIndex(idx)}
+                        className={`w-16 h-16 rounded border-2 overflow-hidden ${
+                          idx === currentImageIndex ? "border-purple-500" : "border-gray-200"
+                        }`}
+                      >
+                        <img
+                          src={url || "/placeholder.svg"}
+                          alt={`Thumbnail ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.src = ""
+                          }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Product Details */}
+              <div className="md:w-1/2">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">{viewProduct.name}</h2>
+
+                <div className="mb-4">
+                  {viewProduct.discount_price ? (
+                    <div className="flex items-center">
+                      <span className="text-xl font-bold text-purple-600 mr-2">
+                        {formatPrice(viewProduct.discount_price)}
+                      </span>
+                      <span className="text-sm line-through text-gray-500">{formatPrice(viewProduct.main_price)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-xl font-bold text-purple-600">{formatPrice(viewProduct.main_price)}</span>
+                  )}
+                </div>
+
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 font-semibold">Category</p>
+                  <p className="text-gray-900">{viewProduct.category?.name || "Uncategorized"}</p>
+                </div>
+
+                <div className="mb-4">
+                  <p className="text-sm text-gray-600 font-semibold">Stock Status</p>
+                  <div className={`flex items-center ${getStockStatusDisplay(viewProduct.quantity).color}`}>
+                    {getStockStatusDisplay(viewProduct.quantity).icon}
+                    <span>{getStockStatusDisplay(viewProduct.quantity).text}</span>
+                  </div>
+                </div>
+
+                {viewProduct.description && (
+                  <div className="mb-4">
+                    <p className="text-sm text-gray-600 font-semibold">Description</p>
+                    <p className="text-gray-700 whitespace-pre-line">{viewProduct.description}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={() => {
+                  setIsViewModalOpen(false)
+                  handleEditProduct(viewProduct)
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Edit Product
+              </button>
+              <button
+                onClick={() => setIsViewModalOpen(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       {isDeleteDialogOpen && (
@@ -355,6 +575,31 @@ const ProductTable = ({ products, onRefresh }: ProductTableProps) => {
                   <>Delete</>
                 )}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Product Edit Modal */}
+      {isEditModalOpen && productToEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">Edit Product</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-gray-500 hover:text-gray-700">
+                <FiX />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto">
+              <EditProductForm
+                product={productToEdit}
+                onClose={() => setIsEditModalOpen(false)}
+                onSave={() => {
+                  setIsEditModalOpen(false)
+                  if (onRefresh) onRefresh()
+                }}
+              />
             </div>
           </div>
         </div>
