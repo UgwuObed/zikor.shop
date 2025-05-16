@@ -93,7 +93,7 @@ const EditProductForm: React.FC<EditProductFormProps> = ({ product, onClose, onS
       await apiClient.patch(`/products/${product.id}`, submitData, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': 'application/json',
         },
       })
 
