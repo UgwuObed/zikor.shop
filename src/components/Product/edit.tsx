@@ -74,26 +74,23 @@ const EditProductForm: React.FC<EditProductFormProps> = ({ product, onClose, onS
     try {
       const accessToken = localStorage.getItem("accessToken")
       
-      // Create form data for submission
+
       const submitData = new FormData()
       
-      // Add text fields
       Object.entries(formData).forEach(([key, value]) => {
         if (value !== undefined && value !== null) {
           submitData.append(key, value.toString())
         }
       })
       
-      // Add current images
+ 
       submitData.append('current_images', JSON.stringify(currentImages))
-      
-      // Add new images
+
       imageFiles.forEach((file) => {
         submitData.append('images[]', file)
       })
 
-      // Send update request
-      await apiClient.put(`/products/${product.id}`, submitData, {
+      await apiClient.patch(`/products/${product.id}`, submitData, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'multipart/form-data',
