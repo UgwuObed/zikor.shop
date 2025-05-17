@@ -150,12 +150,10 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
   const handleProceedToCheckout = () => {
     if (productsInCart.length === 0) return;
     
-    // If buyer info is already saved, show checkout flow directly
     if (buyerInfoSaved && buyerInfo.name && buyerInfo.email && buyerInfo.phone) {
       setShowCheckoutFlow(true);
       // setShowCart(false); 
     } else {
-      // Otherwise go to buyer info step first
       setCheckoutStep('buyer-info');
       setInfoMessage("Please confirm your details before proceeding to checkout.");
     }
@@ -227,10 +225,8 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
     }, 300)
   }
 
-  // Check if inputs are valid
   const isBuyerInfoValid = buyerInfo.name && buyerInfo.email && buyerInfo.phone;
 
-  // Determine what content to show based on checkout step
   const renderCheckoutContent = () => {
     switch (checkoutStep) {
       case 'buyer-info':
@@ -279,22 +275,22 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
               </h3>
               
               {showSavedMessage && (
-  <motion.div 
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -10 }}
-    className="bg-green-50 border-l-4 border-green-500 p-4 mb-4 rounded-lg"
-  >
-    <div className="flex">
-      <div className="flex-shrink-0">
-        <Check size={18} className="text-green-500" />
-      </div>
-      <div className="ml-3">
-        <p className="text-sm text-green-700">Your information has been saved successfully!</p>
-      </div>
-    </div>
-  </motion.div>
-)}
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="bg-green-50 border-l-4 border-green-500 p-4 mb-4 rounded-lg"
+              >
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <Check size={18} className="text-green-500" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-green-700">Your information has been saved successfully!</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
               <div className="space-y-4">
                 <div>

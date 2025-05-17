@@ -267,27 +267,26 @@ export default function useCart() {
         await saveBuyerInfo(buyerInfo);
       }
       
-      // Then process checkout
       const response = await apiClient.post('/cart/checkout', {
         buyerInfo
       });
       
       if (response.data && response.data.success) {
-        // Clear cart after successful checkout
         setCartItems([]);
-        
-        // Close the cart drawer
+      
         setShowCart(false);
         
-        // Reset buyer info saved state
         setBuyerInfoSaved(false);
         
-        // Clear buyer info
         setBuyerInfo({
           name: '',
           email: '',
           phone: ''
         });
+        if (response.data.authorization_url) {
+                window.location.href = response.data.authorization_url;
+                return;
+            }
       } else {
         throw new Error(response.data?.message || 'Checkout failed');
       }

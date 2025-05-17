@@ -1,68 +1,47 @@
-"use client";
+"use client"
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/router";
-import Head from "next/head";
-import Link from "next/link";
-import { CheckCircle } from "lucide-react";
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
+import { getSubdomain } from '../../../utils/subdomain';
 
-const CheckoutSuccessPage = () => {
+export default function CheckoutSuccess() {
   const router = useRouter();
-  const { orderId, orderNumber } = router.query;
-
-  const [orderDetails, setOrderDetails] = useState({
-    orderId: "",
-    orderNumber: "",
-    total: 0,
-    status: "pending",
-  });
+  const { reference, store_slug } = router.query;
+  const storeSlug = store_slug || (typeof window !== 'undefined' ? getSubdomain(window.location.hostname) : null);
 
   useEffect(() => {
-    if (orderId && orderNumber) {
-      setOrderDetails({
-        orderId: Array.isArray(orderId) ? orderId[0] : orderId,
-        orderNumber: Array.isArray(orderNumber) ? orderNumber[0] : orderNumber,
-        total: 1000, 
-        status: "confirmed",
-      });
+
+  }, [reference]);
+
+  const handleContinueShopping = () => {
+    if (storeSlug) {
+      if (store_slug) {
+        router.push(`/store/${storeSlug}`);
+      } else {
+        window.location.href = `https://${storeSlug}.zikor.shop`;
+      }
+    } else {
+      router.push('/');
     }
-  }, [orderId, orderNumber]);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <Head>
-        <title>Order Confirmed!</title>
-        <meta name="description" content="Your order has been confirmed and is being processed." />
-      </Head>
-
-      <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg">
-        <div className="text-center mb-6">
-          <div className="flex justify-center mb-4">
-            <CheckCircle size={50} color="#6366f1" />
-          </div>
-          <h2 className="text-2xl font-semibold text-gray-800">Order Confirmed!</h2>
-          <p className="text-gray-600">Thank you for your purchase. Your order is being processed.</p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center p-8 max-w-md bg-white rounded-lg shadow-md">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+          </svg>
         </div>
-
-        <div className="mb-6">
-          <h3 className="font-medium text-lg">Order Details</h3>
-          <p className="text-sm text-gray-500">Order Number: <span className="font-medium">{orderDetails.orderNumber || "Not Available"}</span></p>
-          <p className="text-sm text-gray-500">Total Amount: <span className="font-medium">₦{orderDetails.total.toLocaleString()}</span></p>
-          <p className="text-sm text-gray-500">Status: <span className="font-medium capitalize">{orderDetails.status}</span></p>
-        </div>
-
-        <div className="flex justify-center gap-4">
-          <Link href="/" className="px-4 py-2 text-white bg-blue-600 rounded-lg">
-            Return to Store
-          </Link>
-
-          <button onClick={() => window.print()} className="px-4 py-2 text-white bg-gray-600 rounded-lg">
-            Print Receipt
-          </button>
-        </div>
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Successful!</h2>
+        <p className="text-gray-600 mb-6">Thank you for your order. We've sent a confirmation to your email.</p>
+        <button
+          onClick={handleContinueShopping}
+          className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
+        >
+          Continue Shopping
+        </button>
       </div>
     </div>
   );
-};
-
-export default CheckoutSuccessPage;
+}

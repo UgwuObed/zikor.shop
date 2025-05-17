@@ -67,8 +67,6 @@ interface ShippingFee {
 const StorefrontPage = () => {
   const router = useRouter()
   const { slug: routerSlug } = router.query
-
-  // Storefront data state
   const [storefrontData, setStorefrontData] = useState<StorefrontResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -81,7 +79,6 @@ const StorefrontPage = () => {
   const [shippingFees, setShippingFees] = useState<ShippingFee[]>([]);
 
   
-  // Use the updated cart hook to manage cart state and operations
   const {
     cartItems,
     cartCount,
@@ -101,7 +98,6 @@ const StorefrontPage = () => {
     setShowNotification
   } = useCart();
 
-  // Determine the storefront slug from router or subdomain
   useEffect(() => {
     console.log('Store page loaded with slug:', routerSlug)
     if (routerSlug && typeof routerSlug === 'string') {
@@ -164,10 +160,8 @@ const StorefrontPage = () => {
     fetchStorefront()
   }, [effectiveSlug])
 
-  // Get theme color from storefront data
   const themeColor = storefrontData?.storefront.color_theme || "#6366f1"
 
-  // Extract unique categories from products
   const categories = storefrontData?.products
     ? Array.from(
         new Set(storefrontData.products.map((p) => p.category.name))
@@ -177,7 +171,6 @@ const StorefrontPage = () => {
       }))
     : []
 
-  // Filter products based on selected category and price range
   const filteredProducts = storefrontData?.products
     ? storefrontData.products.filter((product) => {
         if (selectedCategory && product.category.name !== selectedCategory) {
@@ -193,7 +186,6 @@ const StorefrontPage = () => {
       })
     : []
 
-  // Handle product click to show details modal
   const handleProductClick = (product: Product) => {
     setSelectedProduct(product)
     setShowProductModal(true)
@@ -222,12 +214,10 @@ const StorefrontPage = () => {
     }
   }
 
-  // Handle checkout completion
   const handleCheckout = async (buyerInfo: BuyerInfo) => {
     try {
       await checkout(buyerInfo)
-      
-      // After successful checkout, redirect to a success page
+
       router.push('/checkout/success')
     } catch (error) {
       console.error('Checkout failed:', error)
