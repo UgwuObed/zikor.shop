@@ -249,29 +249,78 @@ const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
             </div>
 
             {/* Payment Options */}
-            <div className="p-5 rounded-2xl shadow-md bg-white border mb-5" style={{ borderColor: `${themeColor}20` }}>
-              <h3 className="text-lg font-semibold mb-4" style={{ color: themeColor }}>
-                Payment Method
-              </h3>
+<div className="p-5 rounded-2xl shadow-md bg-white border mb-5" style={{ borderColor: `${themeColor}20` }}>
+  <h3 className="text-lg font-semibold mb-4" style={{ color: themeColor }}>
+    Payment Method
+  </h3>
 
-              <div className="space-y-3">
-                <div
-                  className="p-3 border-2 rounded-lg flex items-center"
-                  style={{ borderColor: themeColor, backgroundColor: `${themeColor}05` }}
-                >
-                  <div
-                    className="w-5 h-5 rounded-full mr-3 flex items-center justify-center"
-                    style={{ backgroundColor: themeColor }}
-                  >
-                    <Check size={12} className="text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Pay on Delivery</p>
-                    <p className="text-xs text-gray-500">Pay with cash when your order is delivered</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+  <div className="space-y-3">
+    {/* Paystack Option - Default */}
+    <div 
+      className="p-4 border-2 rounded-lg flex items-center cursor-pointer transition-all"
+      style={{ 
+        borderColor: themeColor, 
+        backgroundColor: `${themeColor}05` 
+      }}
+      onClick={() => {/* Payment selection logic would go here */}}
+    >
+      <div
+        className="w-5 h-5 rounded-full mr-3 flex items-center justify-center"
+        style={{ backgroundColor: themeColor }}
+      >
+        <Check size={12} className="text-white" />
+      </div>
+      <div className="flex-1">
+        <p className="font-medium">Pay securely with Paystack</p>
+        <p className="text-xs text-gray-500">Safe and secure online payment</p>
+      </div>
+      <div className="w-10 h-10 rounded bg-gray-50 flex items-center justify-center ml-2">
+        <Lock size={16} className="text-gray-500" />
+      </div>
+    </div>
+
+        {/* Pay on Delivery Option */}
+        <div 
+          className="p-4 border-2 rounded-lg flex items-center cursor-pointer transition-all hover:bg-gray-50"
+          style={{ borderColor: `${themeColor}30` }}
+          onClick={() => {/* Payment selection logic would go here */}}
+        >
+          <div
+            className="w-5 h-5 rounded-full border-2 mr-3"
+            style={{ borderColor: themeColor }}
+          >
+          </div>
+          <div className="flex-1">
+            <p className="font-medium">Pay on Delivery</p>
+            <p className="text-xs text-gray-500">Pay with cash when your order is delivered</p>
+          </div>
+        </div>
+
+        {/* Payaza Option - Coming Soon */}
+        <div 
+          className="p-4 border-2 rounded-lg flex items-center bg-gray-50 opacity-70 relative"
+          style={{ borderColor: "transparent" }}
+        >
+          <div
+            className="w-5 h-5 rounded-full border-2 mr-3"
+            style={{ borderColor: "gray" }}
+          >
+          </div>
+          <div className="flex-1">
+            <p className="font-medium text-gray-400">Pay with Payaza</p>
+            <p className="text-xs text-gray-400">Alternative payment option</p>
+          </div>
+          <div className="absolute right-3 top-3">
+            <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-600 font-medium">Coming soon</span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center">
+        <Info size={14} className="text-gray-400 mr-2" />
+        <p className="text-xs text-gray-500">All transactions are secure and encrypted</p>
+      </div>
+    </div>
 
             {error && (
               <div className="p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
