@@ -365,7 +365,7 @@ const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
             </div>
           </div>
         )
-      default: // details
+      default: 
         return (
           <div className="space-y-5">
             <div className="checkout-steps mb-6">
