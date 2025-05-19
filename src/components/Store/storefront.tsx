@@ -31,11 +31,6 @@ interface FormData {
     close: string;
     closed: boolean;
   }>;
-  bank_details: {
-    bank_name: string;
-    account_name: string;
-    account_number: string;
-  };
   social_links: {
     facebook: string;
     instagram: string;
@@ -86,11 +81,6 @@ const StorefrontSetup = () => {
       Saturday: { open: '', close: '', closed: true },
       Sunday: { open: '', close: '', closed: true }
     },
-    bank_details: {
-      bank_name: '',
-      account_name: '',
-      account_number: ''
-    }
   });
 
  
@@ -121,15 +111,7 @@ const StorefrontSetup = () => {
             [field]: value
           }
         }));
-      } else if (name.startsWith('bank_details.')) {
-        const [_, field] = name.split('.');
-        setFormData(prev => ({
-          ...prev,
-          bank_details: {
-            ...prev.bank_details,
-            [field]: value
-          }
-        }));
+ 
       } else {
         setFormData(prev => ({
           ...prev,
@@ -212,9 +194,7 @@ const StorefrontSetup = () => {
       formDataObj.append('description', formData.description);
       formDataObj.append('email', formData.email);
       formDataObj.append('phone', formData.phone);
-      
       formDataObj.append('social_links', JSON.stringify(formData.social_links));
-      formDataObj.append('bank_details', JSON.stringify(formData.bank_details));
       formDataObj.append('business_hours', JSON.stringify(formData.business_hours));
       
       formDataObj.append('color_theme', formData.color_theme);
@@ -245,7 +225,6 @@ const StorefrontSetup = () => {
       }
   
       if (response.data?.success === true) {
-        console.log('Operation successful, triggering confetti');
         setSuccess(true);
         setTimeout(() => router.push('/product/add'), 3000);
       } else {

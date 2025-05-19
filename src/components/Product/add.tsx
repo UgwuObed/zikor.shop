@@ -181,7 +181,7 @@ const AddProduct = () => {
       
       if (response.status === 201) {
         setUploadSuccess(true);
-        setTimeout(() => router.push('/dashboard/dashboard'), 3000);
+        setTimeout(() => router.push('/bank/add'), 3000);
       }
     } catch (error: any) {
       console.error('Error uploading product:', error);

@@ -40,11 +40,6 @@ interface PreviewStepProps {
     color_theme: string;
     business_hours: Record<string, BusinessHoursDay>;
     address: string;
-    bank_details: {
-      bank_name: string;
-      account_name: string;
-      account_number: string;
-    };
   };
   prevStep: () => void;
   handleSubmit: () => void;
