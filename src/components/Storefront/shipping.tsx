@@ -49,7 +49,6 @@ const ShippingFees: React.FC<ShippingFeesProps> = ({
           additionalFee: 0
         }));
 
-    // Merge existing fees with default locations
     return locations.map(loc => {
       const existingFee = shippingFees.find(
         fee => fee.name === loc.name && fee.state === loc.state

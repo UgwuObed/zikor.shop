@@ -11,6 +11,12 @@ import PreviewStep from '../Storefront/preview';
 import { CheckCircle, AlertTriangle } from "lucide-react";
 
 
+interface ShippingLocation {
+  name: string;
+  state: string;
+  baseFee: number;
+  additionalFee: number;
+}
 
 interface FormData {
   business_name: string;
@@ -37,6 +43,8 @@ interface FormData {
     twitter: string;
     website: string;
   };
+
+  shipping_fees?: ShippingLocation[];
 }
 
 
@@ -196,6 +204,10 @@ const StorefrontSetup = () => {
       formDataObj.append('phone', formData.phone);
       formDataObj.append('social_links', JSON.stringify(formData.social_links));
       formDataObj.append('business_hours', JSON.stringify(formData.business_hours));
+
+      if (formData.shipping_fees) {
+      formDataObj.append('shipping_fees', JSON.stringify(formData.shipping_fees));
+    }
       
       formDataObj.append('color_theme', formData.color_theme);
       formDataObj.append('address', formData.address);

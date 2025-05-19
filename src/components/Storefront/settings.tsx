@@ -26,7 +26,6 @@ interface SettingsStepProps {
   formData: {
     business_hours: Record<string, BusinessHoursDay>;
     shipping_fees?: ShippingLocation[];
-    // bank_details: BankDetails;
     [key: string]: any;
   };
   handleChange: (e: FormChangeEvent) => void;
