@@ -107,14 +107,11 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
 
     setProductsInCart(itemsWithDetails)
     
-    // If cart becomes empty, reset to cart view
     if (itemsWithDetails.length === 0) {
       setCheckoutStep('cart')
     }
-    // Auto proceed to buyer info if cart has items and user hasn't filled info yet and isn't in another checkout step
     else if (itemsWithDetails.length > 0 && checkoutStep === 'cart' && 
              !buyerInfoSaved && !buyerInfo.name && !buyerInfo.email && !buyerInfo.phone) {
-      // Wait 2 seconds before showing the form to give user time to view cart
       const timer = setTimeout(() => {
         setCheckoutStep('buyer-info');
         setInfoMessage("Fill in your details to save with your cart. You can continue shopping afterward.");

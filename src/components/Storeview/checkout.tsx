@@ -66,7 +66,7 @@ const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
   const [error, setError] = useState<string | null>(null)
   const [updatedBuyerInfo, setUpdatedBuyerInfo] = useState<BuyerInfo>(buyerInfo)
 
-  // Calculate order summary
+
   const subtotal = cartItems.reduce((total, item) => {
     const product = products.find((p) => p.id === item.id)
     if (!product) return total
@@ -249,13 +249,13 @@ const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
             </div>
 
             {/* Payment Options */}
-<div className="p-5 rounded-2xl shadow-md bg-white border mb-5" style={{ borderColor: `${themeColor}20` }}>
-  <h3 className="text-lg font-semibold mb-4" style={{ color: themeColor }}>
-    Payment Method
-  </h3>
+      <div className="p-5 rounded-2xl shadow-md bg-white border mb-5" style={{ borderColor: `${themeColor}20` }}>
+        <h3 className="text-lg font-semibold mb-4" style={{ color: themeColor }}>
+          Payment Method
+        </h3>
 
   <div className="space-y-3">
-    {/* Paystack Option - Default */}
+    {/* Paystack Option*/}
     <div 
       className="p-4 border-2 rounded-lg flex items-center cursor-pointer transition-all"
       style={{ 

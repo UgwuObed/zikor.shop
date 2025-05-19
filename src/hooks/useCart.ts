@@ -65,10 +65,9 @@ export default function useCart() {
       return 0;
     }
     
-    // Calculate base fee
+ 
     let fee = Number.parseFloat(deliveryLocation.baseFee);
     
-    // Calculate additional fee based on total quantity
     const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
     if (totalQuantity > 1) {
       const additionalItems = totalQuantity - 1;
@@ -185,7 +184,7 @@ export default function useCart() {
           });
           
           if (addResponse.data && addResponse.data.items) {
-            console.log('Successfully added item:', addResponse.data.items);
+            // console.log('Successfully added item:', addResponse.data.items);
             setCartItems(addResponse.data.items);
             return true;
           }
