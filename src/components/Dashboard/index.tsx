@@ -42,11 +42,11 @@ const Dashboard = () => {
     totalRevenue: 0,
     totalOrders: 0,
     activeProducts: 0,
-    newCustomers: 0,
+    // newCustomers: 0,
     revenueChange: '0%',
     ordersChange: '0%',
     productsChange: '0%',
-    customersChange: '0%',
+    // customersChange: '0%',
     loading: true,
     error: null as string | null
   });
@@ -163,11 +163,11 @@ const Dashboard = () => {
           totalRevenue: currentRevenue,
           totalOrders: currentOrders,
           activeProducts: activeProducts,
-          newCustomers: newCustomers,
+          // newCustomers: newCustomers,
           revenueChange: revenueChange,
           ordersChange: ordersChange,
-          productsChange: '+5.1%', // Placeholder
-          customersChange: customersChange,
+          productsChange: '+5.1%', 
+          // customersChange: customersChange,
           loading: false,
           error: null
         });
@@ -311,13 +311,13 @@ const Dashboard = () => {
       icon: FiShoppingBag, 
       color: "green" 
     },
-    { 
-      title: "New Customers", 
-      value: dashboardStats.loading ? "Loading..." : formatNumber(dashboardStats.newCustomers), 
-      change: dashboardStats.customersChange, 
-      icon: FiUsers, 
-      color: "orange" 
-    },
+    // { 
+    //   title: "New Customers", 
+    //   value: dashboardStats.loading ? "Loading..." : formatNumber(dashboardStats.newCustomers), 
+    //   change: dashboardStats.customersChange, 
+    //   icon: FiUsers, 
+    //   color: "orange" 
+    // },
   ];
 
   const quickActions = [
