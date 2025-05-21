@@ -94,11 +94,10 @@ const ProductTable = ({ products: initialProducts, onRefresh }: ProductTableProp
       setProductToDelete(null)
       setSelectedProducts(prev => prev.filter(id => id !== productToDelete.id))
       
-      // Show success notification
+   
       setShowDeleteNotification(true)
       setTimeout(() => setShowDeleteNotification(false), 3000)
       
-      // Refresh the product list
       if (onRefresh) onRefresh()
     } catch (error) {
       console.error("Error deleting product:", error)

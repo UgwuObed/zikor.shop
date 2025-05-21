@@ -1,5 +1,6 @@
 import { useState, useEffect, SetStateAction } from 'react';
 import { useRouter, usePathname } from "next/navigation";
+import apiClient from '../../apiClient';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -16,15 +17,173 @@ import SalesChart from '../../components/Dashboard/salesChart';
 import RecentOrders from '../../components/Dashboard/recentOrders';
 import ActivityFeed from '../../components/Dashboard/activityFeed';
 
-const Dashboard = () => {
+interface ChangeCalculator {
+  (current: number, previous: number): string;
+}
 
+interface DateFormatter {
+   (date: Date): string;
+}
+
+interface CurrencyFormatter {
+  (amount: number): string;
+}
+
+interface NumberFormatter {
+  (number: number): string;
+}
+
+const Dashboard = () => {
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [unreadNotifications, setUnreadNotifications] = useState(3);
+  const [dashboardStats, setDashboardStats] = useState({
+    totalRevenue: 0,
+    totalOrders: 0,
+    activeProducts: 0,
+    newCustomers: 0,
+    revenueChange: '0%',
+    ordersChange: '0%',
+    productsChange: '0%',
+    customersChange: '0%',
+    loading: true,
+    error: null as string | null
+  });
   const router = useRouter();
-
   const pathname = usePathname();
+
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      const accessToken = localStorage.getItem('accessToken');
+      try {
+  
+        const today = new Date();
+      
+        const last30Days = new Date(today);
+        last30Days.setDate(today.getDate() - 30);
+        
+        const previous30Start = new Date(last30Days);
+        previous30Start.setDate(previous30Start.getDate() - 30);
+        
+
+        
+        const dateFormat: DateFormatter = (date) => date.toISOString().split('T')[0];
+        
+        const currentPeriod = {
+          start_date: dateFormat(last30Days),
+          end_date: dateFormat(today)
+        };
+        
+        const previousPeriod = {
+          start_date: dateFormat(previous30Start),
+          end_date: dateFormat(last30Days)
+        };
+        
+        
+        const currentRevenueResponse = await apiClient.get('/stats', { 
+          params: currentPeriod,
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        
+        const previousRevenueResponse = await apiClient.get('/stats', { 
+          params: previousPeriod ,
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        
+        const productsResponse = await apiClient.get('/products', {
+          params: { 
+            per_page: 1,
+            status: 'active'
+          },
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        
+ 
+        const currentStats = currentRevenueResponse.data.stats;
+        const previousStats = previousRevenueResponse.data.stats;
+        
+        const calculateChange: ChangeCalculator = (current, previous) => {
+          if (previous === 0) return '+0%';
+          const change = ((current - previous) / previous) * 100;
+          return (change >= 0 ? '+' : '') + change.toFixed(1) + '%';
+        };
+        
+        const currentRevenue = currentStats.total_revenue || 0;
+        const previousRevenue = previousStats.total_revenue || 0;
+        const revenueChange = calculateChange(currentRevenue, previousRevenue);
+        
+        const currentOrders = currentStats.total_orders || 0;
+        const previousOrders = previousStats.total_orders || 0;
+        const ordersChange = calculateChange(currentOrders, previousOrders);
+        
+   
+        const activeProducts = productsResponse?.data?.count || 0;
+        
+    
+        let newCustomers = 0;
+        let customersChange = '+0%';
+        
+        // try {
+        //   const buyersResponse = await apiClient.get('/store/buyers', {
+        //     params: currentPeriod,
+        //     headers: {
+        //       'Authorization': `Bearer ${accessToken}`
+        //     }
+        //   });
+          
+        //   if (buyersResponse.data.success) {
+        //     newCustomers = buyersResponse.data.stats.total_unique_buyers || 0;
+            
+        //     const previousBuyersResponse = await apiClient.get('/store/buyers', {
+        //       params: previousPeriod,
+        //       headers: {
+        //         'Authorization': `Bearer ${accessToken}`
+        //       }
+        //     });
+            
+        //     if (previousBuyersResponse.data.success) {
+        //       const previousCustomers = previousBuyersResponse.data.stats.total_unique_buyers || 0;
+        //       customersChange = calculateChange(newCustomers, previousCustomers);
+        //     }
+        //   }
+        // } catch (err) {
+        //   console.error('Error fetching customer stats:', err);
+        
+        // }
+      
+        setDashboardStats({
+          totalRevenue: currentRevenue,
+          totalOrders: currentOrders,
+          activeProducts: activeProducts,
+          newCustomers: newCustomers,
+          revenueChange: revenueChange,
+          ordersChange: ordersChange,
+          productsChange: '+5.1%', // Placeholder
+          customersChange: customersChange,
+          loading: false,
+          error: null
+        });
+        
+      } catch (err) {
+        console.error('Error fetching dashboard stats:', err);
+        setDashboardStats(prevState => ({
+          ...prevState,
+          loading: false,
+          error: 'Failed to load dashboard statistics'
+        }));
+      }
+    };
+    
+    fetchDashboardStats();
+  }, []);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -60,7 +219,7 @@ const Dashboard = () => {
       icon: FiDollarSign, 
       path: '/sales',
       subItems: [
-        { name: 'Orders', path: '/sales/orders' },
+        { name: 'Orders', path: '/order/sales' },
         { name: 'Transactions', path: '/sales/transactions' },
         { name: 'Refunds', path: '/sales/refunds' },
       ]
@@ -110,18 +269,62 @@ const Dashboard = () => {
     setActiveSubmenu(activeSubmenu === name ? null : name);
   };
 
+
+
+
+  const formatCurrency: CurrencyFormatter = (amount) => {
+    return new Intl.NumberFormat('en-NG', {
+      style: 'currency',
+      currency: 'NGN',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
+
+
+
+  const formatNumber: NumberFormatter = (number) => {
+    return new Intl.NumberFormat('en').format(number);
+  };
+
+
   const stats = [
-    { title: "Total Revenue", value: "₦1,245,890", change: "+12.5%", icon: FiDollarSign, color: "purple" },
-    { title: "Total Orders", value: "1,845", change: "+8.2%", icon: BsCartCheck, color: "blue" },
-    { title: "Active Products", value: "128", change: "+5.1%", icon: FiShoppingBag, color: "green" },
-    { title: "New Customers", value: "56", change: "+3.4%", icon: FiUsers, color: "orange" },
+    { 
+      title: "Total Revenue", 
+      value: dashboardStats.loading ? "Loading..." : formatCurrency(dashboardStats.totalRevenue), 
+      change: dashboardStats.revenueChange, 
+      icon: FiDollarSign, 
+      color: "purple" 
+    },
+    { 
+      title: "Total Orders", 
+      value: dashboardStats.loading ? "Loading..." : formatNumber(dashboardStats.totalOrders), 
+      change: dashboardStats.ordersChange, 
+      icon: BsCartCheck, 
+      color: "blue" 
+    },
+    { 
+      title: "Total Products", 
+      value: dashboardStats.loading ? "Loading..." : formatNumber(dashboardStats.activeProducts), 
+      change: dashboardStats.productsChange, 
+      icon: FiShoppingBag, 
+      color: "green" 
+    },
+    { 
+      title: "New Customers", 
+      value: dashboardStats.loading ? "Loading..." : formatNumber(dashboardStats.newCustomers), 
+      change: dashboardStats.customersChange, 
+      icon: FiUsers, 
+      color: "orange" 
+    },
   ];
 
   const quickActions = [
     { title: "Add Product", icon: FiPlus, link: "/product/add" },
     { title: "Create Discount", icon: RiExchangeDollarLine, link: "/marketing/discounts" },
     { title: "View Analytics", icon: BsGraphUp, link: "/analytics" },
-    { title: "Process Orders", icon: FiTruck, link: "/sales/orders" },
+    { title: "Process Orders", icon: FiTruck, link: "/order/sales" },
   ];
 
   return (
@@ -231,8 +434,8 @@ const Dashboard = () => {
                           >
                             {subItem.name}
                           </motion.div>
-
-                        ))}                      </motion.div>
+                        ))}
+                      </motion.div>
                     )}
                   </AnimatePresence>
                 )}
@@ -351,14 +554,6 @@ const Dashboard = () => {
                   transition={{ delay: 0.3 }}
                   className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6"
                 >
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-lg font-semibold">Sales Overview</h2>
-                    <select className="text-sm border border-gray-200 rounded-lg px-3 py-1 focus:outline-none focus:ring-2 focus:ring-purple-500">
-                      <option>Last 7 days</option>
-                      <option>Last 30 days</option>
-                      <option>Last 3 months</option>
-                    </select>
-                  </div>
                   <SalesChart />
                 </motion.div>
 

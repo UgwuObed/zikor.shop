@@ -43,11 +43,11 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
       ]
     },
     { 
-      name: 'Sales', 
+      name: 'Orders', 
       icon: FiDollarSign, 
-      path: '/sales',
+      // path: '/sales',
       subItems: [
-        { name: 'Orders', path: '/sales/orders' },
+        { name: 'Orders', path: '/order/all' },
         { name: 'Transactions', path: '/sales/transactions' },
         { name: 'Refunds', path: '/sales/refunds' },
       ]
