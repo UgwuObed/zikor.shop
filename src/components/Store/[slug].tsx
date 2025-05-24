@@ -99,20 +99,29 @@ const StorefrontPage = () => {
   } = useCart();
 
   useEffect(() => {
-    console.log('Store page loaded with slug:', routerSlug)
-    if (routerSlug && typeof routerSlug === 'string') {
-      setEffectiveSlug(routerSlug)
+  console.log('Store page loaded with slug:', routerSlug)
+  
+ 
+  if (typeof window !== 'undefined') {
+    const subdomainSlug = getSubdomain(window.location.hostname)
+    if (subdomainSlug && subdomainSlug !== 'www' && subdomainSlug !== 'zikor') {
+      console.log('Using subdomain slug:', subdomainSlug)
+      setEffectiveSlug(subdomainSlug)
       return
     }
-    
-    if (typeof window !== 'undefined') {
-      const subdomainSlug = getSubdomain(window.location.hostname)
-      if (subdomainSlug && subdomainSlug !== 'www') {
-        setEffectiveSlug(subdomainSlug)
-      }
-    }
-  }, [routerSlug])
-
+  }
+  
+  
+  if (routerSlug && typeof routerSlug === 'string') {
+    console.log('Using router slug:', routerSlug)
+    setEffectiveSlug(routerSlug)
+    return
+  }
+  
+  
+  console.log('No valid slug found')
+  setError('Store not found')
+}, [routerSlug])
   
   useEffect(() => {
     if (!effectiveSlug) return;
