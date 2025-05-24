@@ -2,27 +2,27 @@
 const nextConfig = {
   async rewrites() {
     return [
-      // Handle subdomain routing - rewrite to your actual page path
+      // Handle subdomain routing
       {
         source: '/',
         has: [
           {
             type: 'host',
-            value: '(?<subdomain>.*)\\.zikor\\.shop',
+            value: '(?<subdomain>(?!www|api|admin)[^.]+)\\.zikor\\.shop',
           },
         ],
-        destination: '/store/:subdomain', // This should match your file structure
+        destination: '/store/:subdomain',
       },
-      // Handle all paths on subdomains (for additional pages like checkout)
+      // Handle other paths on subdomains  
       {
         source: '/:path*',
         has: [
           {
             type: 'host',
-            value: '(?<subdomain>.*)\\.zikor\\.shop',
+            value: '(?<subdomain>(?!www|api|admin)[^.]+)\\.zikor\\.shop',
           },
         ],
-        destination: '/:path*', // Keep other paths intact
+        destination: '/:path*?subdomain=:subdomain',
       },
     ];
   },
