@@ -2,11 +2,15 @@
 import Store from "../../components/Store/[slug]";
 import "../../app/globals.css";
 
-export default function StorefrontPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
-  const slug = Array.isArray(searchParams.slug) ? searchParams.slug[0] : searchParams.slug;
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function StorefrontPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
 
   if (!slug) return <div>No storefront slug provided</div>;
 
   return <Store slug={slug} />;
 }
-
