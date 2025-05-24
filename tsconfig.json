@@ -33,7 +33,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-, "utils/subdomain.js"  ],
+, "utils/subdomain.ts"  ],
   "exclude": [
     "node_modules"
   ]

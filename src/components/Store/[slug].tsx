@@ -14,6 +14,7 @@ import ProductSearch from "../Storeview/search"
 import ProductDetailModal from "../Storeview/modal"
 import StorefrontFooter from "../Storeview/footer"
 import CartNotification from "../Storeview/notification"
+import { StoreProps } from "../../types/store";
 
 interface StorefrontData {
   id: number
@@ -64,19 +65,26 @@ interface ShippingFee {
   updated_at?: string;
 }
 
-const StorefrontPage = () => {
+interface StorefrontPageProps {
+  slug: string; 
+}
+
+
+
+const StorefrontPage: React.FC<StoreProps> = ({ slug }) => {
   const router = useRouter()
   const { slug: routerSlug } = router.query
   const [storefrontData, setStorefrontData] = useState<StorefrontResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [effectiveSlug, setEffectiveSlug] = useState<string | null>(null)
+  // const [effectiveSlug, setEffectiveSlug] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000])
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showProductModal, setShowProductModal] = useState(false)
   const [shippingFees, setShippingFees] = useState<ShippingFee[]>([]);
+  const [effectiveSlug, setEffectiveSlug] = useState<string | null>(slug);
 
   
   const {
@@ -133,32 +141,23 @@ const StorefrontPage = () => {
   }, [effectiveSlug]);
 
   useEffect(() => {
-    if (!effectiveSlug) return
-    
+    if (!effectiveSlug) return;
     async function fetchStorefront() {
       try {
-        setLoading(true)
-        const response = await apiClient.get(`/store/${effectiveSlug}`)
-
+        setLoading(true);
+        const response = await apiClient.get(`/store/${effectiveSlug}`);
         if (!response.data) {
-          throw new Error('Failed to load storefront')
+          throw new Error("Failed to load storefront");
         }
-
-        setStorefrontData(response.data)
-
-        if (response.data.products.length > 0) {
-          const prices = response.data.products.map((p: { discount_price: any }) => Number(p.discount_price))
-          setPriceRange([Math.min(...prices), Math.max(...prices)])
-        }
+        setStorefrontData(response.data);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "An unknown error occurred")
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
-
-    fetchStorefront()
-  }, [effectiveSlug])
+    fetchStorefront();
+  }, [effectiveSlug]);
 
   const themeColor = storefrontData?.storefront.color_theme || "#6366f1"
 
