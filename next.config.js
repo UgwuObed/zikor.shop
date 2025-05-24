@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
- return [
-     
+    return [
+      // Handle subdomain routing - rewrite to your actual page path
       {
         source: '/',
         has: [
@@ -11,12 +11,18 @@ const nextConfig = {
             value: '(?<subdomain>.*)\\.zikor\\.shop',
           },
         ],
-        destination: '/store/:subdomain',
+        destination: '/store/:subdomain', // This should match your file structure
       },
-      
+      // Handle all paths on subdomains (for additional pages like checkout)
       {
-        source: '/store/:slug',
-        destination: '/store/:slug',
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: '(?<subdomain>.*)\\.zikor\\.shop',
+          },
+        ],
+        destination: '/:path*', // Keep other paths intact
       },
     ];
   },
@@ -35,9 +41,9 @@ const nextConfig = {
     ];
   },
 
-    images: {
-      domains: ['res.cloudinary.com'],
-    },
-  };
+  images: {
+    domains: ['res.cloudinary.com'],
+  },
+};
 
-  module.exports = nextConfig;
+module.exports = nextConfig;
