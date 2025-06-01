@@ -1,4 +1,3 @@
-// app/storefront/page.tsx
 import Store from "../../components/Store/[slug]";
 import "../../app/globals.css";
 

@@ -1,19 +1,28 @@
-// app/middleware.ts
 import { NextResponse } from "next/server";
 
-export function middleware(request: { nextUrl: { hostname: any; clone: () => any; }; }) {
-  const hostname = request.nextUrl.hostname; // e.g. theirslug.zikor.shop
-  const subdomain = hostname.split(".")[0];
+import { NextURL } from 'next/dist/server/web/next-url';
 
-  // Ignore main domain and www
-  if (subdomain && subdomain !== "www" && subdomain !== "zikor") {
-    // Rewrite to /storefront with slug query param
+interface MiddlewareRequest {
+  nextUrl: NextURL;
+}
+
+export function middleware(request: MiddlewareRequest) {
+  const hostname = request.nextUrl.hostname; 
+  const parts = hostname.split(".");
+  const subdomain = parts[0];
+
+ 
+  if (
+    subdomain &&
+    subdomain !== "www" &&
+    subdomain !== "zikor" &&
+    parts.length === 3
+  ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/storefront";
-    url.searchParams.set("slug", subdomain);
+
+    url.pathname = `/store/${subdomain}`;
     return NextResponse.rewrite(url);
   }
 
-  // Continue for main domain
   return NextResponse.next();
 }
