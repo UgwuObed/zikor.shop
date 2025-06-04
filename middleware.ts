@@ -1,35 +1,57 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  const hostname = request.headers.get('host')
-  
-  if (!hostname) return NextResponse.next()
-  
-  const subdomain = hostname.split('.')[0]
-  
-  console.log(`🌐 Host: ${hostname}, Subdomain: ${subdomain}`)
-  
+interface RequestHeaders {
+  get(name: string): string | null;
+}
 
-  if (subdomain && 
-      subdomain !== 'www' && 
-      subdomain !== 'zikor' &&
-      subdomain !== 'production' && 
-      !hostname.includes('elasticbeanstalk.com') &&
-      !hostname.includes('localhost')) {
-    
-    const url = request.nextUrl.clone()
-    url.pathname = `/store/${subdomain}`
-    
-    console.log(`🔄 Rewriting to: ${url.pathname}`)
-    
-    return NextResponse.rewrite(url)
+interface NextRequest {
+  headers: RequestHeaders;
+  nextUrl: URL;
+}
+
+export function middleware(request: NextRequest): NextResponse {
+  const host = request.headers.get('host');
+  
+  if (!host) {
+    return NextResponse.next();
   }
   
-  return NextResponse.next()
+
+  const cleanHost = host.split(':')[0];
+  const parts = cleanHost.split('.');
+  
+
+  if (parts.length <= 2) {
+    return NextResponse.next();
+  }
+  
+  const subdomain = parts[0];
+  
+
+  if (subdomain === 'www' || subdomain === 'api' || subdomain === 'prod') {
+    return NextResponse.next();
+  }
+  
+
+  const url = new URL(request.nextUrl.href);
+  
+
+  url.pathname = `/store/${subdomain}${url.pathname === '/' ? '' : url.pathname}`;
+  
+  console.log(`🏪 Store subdomain detected: ${subdomain} -> ${url.pathname}`);
+  
+  return NextResponse.rewrite(url);
 }
 
 export const config = {
   matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
-}
+};

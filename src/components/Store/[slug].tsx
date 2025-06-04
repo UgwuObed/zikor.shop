@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/router"
 import Head from "next/head"
 import useCart from "../../hooks/useCart" 
-import { getSubdomain } from "../../../utils/subdomain"
+import { getSubdomain, getSubdomainClient } from "../../../lib/subdomain"
 import apiClient from '../../apiClient'
 import StorefrontHeader from "../Storeview/header"
 import ProductCard from "../Storeview/card"
@@ -106,21 +106,25 @@ const StorefrontPage: React.FC<StoreProps> = ({ slug }) => {
     setShowNotification
   } = useCart();
 
-  useEffect(() => {
-    console.log('Store page loaded with slug:', routerSlug)
-    if (routerSlug && typeof routerSlug === 'string') {
-      setEffectiveSlug(routerSlug)
-      return
+useEffect(() => {
+  console.log('Store page loaded with slug:', routerSlug)
+  console.log('=== STORE DEBUG ===')
+  console.log('routerSlug:', routerSlug)
+  console.log('slug prop:', slug)
+  console.log('window.location.href:', typeof window !== 'undefined' ? window.location.href : 'SSR')
+  console.log('effectiveSlug:', effectiveSlug)
+  if (routerSlug && typeof routerSlug === 'string') {
+    setEffectiveSlug(routerSlug)
+    return
+  }
+   
+   if (typeof window !== 'undefined') {
+    const subdomainSlug = getSubdomainClient() 
+    if (subdomainSlug && subdomainSlug !== 'www') {
+      setEffectiveSlug(subdomainSlug)
     }
-    
-    if (typeof window !== 'undefined') {
-      const subdomainSlug = getSubdomain(window.location.hostname)
-      if (subdomainSlug && subdomainSlug !== 'www') {
-        setEffectiveSlug(subdomainSlug)
-      }
-    }
-  }, [routerSlug])
-
+  }
+}, [routerSlug])
   
   useEffect(() => {
     if (!effectiveSlug) return;
