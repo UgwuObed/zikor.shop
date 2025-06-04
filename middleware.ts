@@ -1,36 +1,35 @@
-// middleware.ts
 import { NextRequest, NextResponse } from 'next/server'
 
-export function middleware(req: NextRequest) {
-  const hostname = req.headers.get('host') || ''
-  const url = req.nextUrl.clone()
+export function middleware(request: NextRequest) {
+  const hostname = request.headers.get('host')
   
-  console.log('Middleware running for hostname:', hostname)
-  console.log('Request path:', req.nextUrl.pathname)
+  if (!hostname) return NextResponse.next()
   
-  // Detect zikor.shop domain with subdomain
-  if (hostname.endsWith('zikor.shop') && hostname !== 'zikor.shop' && hostname !== 'www.zikor.shop') {
-    console.log('Subdomain detected in middleware')
+  const subdomain = hostname.split('.')[0]
+  
+  console.log(`🌐 Host: ${hostname}, Subdomain: ${subdomain}`)
+  
+
+  if (subdomain && 
+      subdomain !== 'www' && 
+      subdomain !== 'zikor' &&
+      subdomain !== 'production' && 
+      !hostname.includes('elasticbeanstalk.com') &&
+      !hostname.includes('localhost')) {
     
-    // Extract the subdomain portion
-    const subdomainPart = hostname.split('.zikor.shop')[0]
-    const subdomain = subdomainPart.split('.').pop()
+    const url = request.nextUrl.clone()
+    url.pathname = `/store/${subdomain}`
     
-    console.log('Extracted subdomain:', subdomain)
+    console.log(`🔄 Rewriting to: ${url.pathname}`)
     
-    // Only handle the root path
-    if (req.nextUrl.pathname === '/') {
-      console.log(`Rewriting to /store/${subdomain}`)
-      
-      // Rewrite to your actual store page path
-      url.pathname = `/store/${subdomain}`
-      return NextResponse.rewrite(url)
-    }
+    return NextResponse.rewrite(url)
   }
   
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)']
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
 }
