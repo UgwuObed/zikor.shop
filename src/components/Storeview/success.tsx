@@ -2,25 +2,30 @@
 
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
-import { getSubdomain } from '../../../utils/subdomain';
+import { getSubdomainClient } from '../../../lib/subdomain'; 
 
 export default function CheckoutSuccess() {
   const router = useRouter();
   const { reference, store_slug } = router.query;
-  const storeSlug = store_slug || (typeof window !== 'undefined' ? getSubdomain(window.location.hostname) : null);
+  
+
+  const storeSlug = store_slug || (typeof window !== 'undefined' ? getSubdomainClient() : null);
 
   useEffect(() => {
-
+    
   }, [reference]);
 
   const handleContinueShopping = () => {
     if (storeSlug) {
       if (store_slug) {
+    
         router.push(`/store/${storeSlug}`);
       } else {
+      
         window.location.href = `https://${storeSlug}.zikor.shop`;
       }
     } else {
+      
       router.push('/');
     }
   };
