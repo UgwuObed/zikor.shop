@@ -2,16 +2,16 @@
   "name": "zikor",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
-  },
-  "engines": {
-    "node": "22.x",
-    "npm": ">=9.0.0"
-  },
+"scripts": {
+  "dev": "next dev",
+  "build": "next build",
+  "start": "next start -p 3000",
+  "lint": "next lint"
+},
+"engines": {
+  "node": "22.x",
+  "npm": ">=9.0.0"
+},
   "dependencies": {
     "@headlessui/react": "^2.1.8",
     "@heroicons/react": "^2.2.0",
