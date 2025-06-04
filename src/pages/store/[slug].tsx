@@ -6,7 +6,8 @@ export default function StorePage() {
   const router = useRouter();
   const { slug } = router.query;
   
-  // Handle loading state while router is ready
+  console.log("StorePage slug:", slug);
+ 
   if (!router.isReady || !slug || typeof slug !== 'string') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
