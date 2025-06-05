@@ -1,61 +1,56 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
-interface RequestHeaders {
-  get(name: string): string | null;
-}
-
-interface NextRequest {
-  headers: RequestHeaders;
-  nextUrl: URL;
-}
-
-export function middleware(request: NextRequest): NextResponse {
-  const host = request.headers.get('host');
-  console.log('🔍 Middleware - Host:', host);
-  console.log('🔍 Middleware - URL:', request.nextUrl.href);
-  console.log('🔍 Middleware - Pathname:', request.nextUrl.pathname);
+export function middleware(request: NextRequest) {
+  console.log('🚨 MIDDLEWARE IS RUNNING! 🚨')
+  console.log('Host:', request.headers.get('host'))
+  console.log('URL:', request.url)
+  console.log('Pathname:', request.nextUrl.pathname)
+  
+  const host = request.headers.get('host')
   
   if (!host) {
-    console.log('❌ No host header found');
-    return NextResponse.next();
+    console.log('No host header found')
+    return NextResponse.next()
   }
   
-  const cleanHost = host.split(':')[0];
-  const parts = cleanHost.split('.');
-  console.log('🔍 Host parts:', parts);
+  const url = request.nextUrl.clone()
+  const hostname = host.split(':')[0]
+  const parts = hostname.split('.')
   
+  console.log('Host parts:', parts)
+  
+ 
   if (parts.length <= 2) {
-    console.log('✅ Main domain, no subdomain');
-    return NextResponse.next();
+    console.log('Main domain, no subdomain')
+    return NextResponse.next()
   }
   
-  const subdomain = parts[0];
-  console.log('🔍 Subdomain detected:', subdomain);
+  const subdomain = parts[0]
+  console.log('Subdomain detected:', subdomain)
   
-  if (subdomain === 'www' || subdomain === 'api' || subdomain === 'prod') {
-    console.log('✅ Ignoring reserved subdomain:', subdomain);
-    return NextResponse.next();
+  
+  if (subdomain === 'www' || subdomain === 'api' || subdomain === 'admin') {
+    console.log('System subdomain, skipping')
+    return NextResponse.next()
   }
   
-  const url = new URL(request.nextUrl.href);
-  const originalPathname = url.pathname;
-  
-  // Don't rewrite if already going to /store/[slug]
+
   if (url.pathname.startsWith('/store/')) {
-    console.log('✅ Already a store route, skipping rewrite');
-    return NextResponse.next();
+    console.log('Already store route')
+    return NextResponse.next()
   }
   
-  url.pathname = `/store/${subdomain}${url.pathname === '/' ? '' : url.pathname}`;
+
+  url.pathname = `/store/${subdomain}`
   
-  console.log(`🏪 REWRITE: ${originalPathname} -> ${url.pathname}`);
-  console.log(`🏪 Full rewrite URL: ${url.href}`);
+  console.log(`Rewriting to: ${url.pathname}`)
   
-  return NextResponse.rewrite(url);
+  return NextResponse.rewrite(url)
 }
 
 export const config = {
   matcher: [
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
-};
+}
