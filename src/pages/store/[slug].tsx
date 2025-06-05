@@ -1,4 +1,3 @@
-// pages/store/[slug].tsx - Enhanced debugging
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import Store from "../../components/Store/[slug]";
