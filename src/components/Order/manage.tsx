@@ -24,7 +24,7 @@ import {
 } from "react-icons/fi"
 import { format, parseISO } from "date-fns"
 
-// Add custom hook for mobile detection
+
 const useMobileDetect = () => {
   const [isMobile, setIsMobile] = useState(false)
 

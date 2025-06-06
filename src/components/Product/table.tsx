@@ -209,7 +209,7 @@ const ProductTable = ({ products: initialProducts, onRefresh }: ProductTableProp
   }
 
   useEffect(() => {
-    // Close action menu when clicking outside
+  
     const handleClickOutside = () => {
       closeActionMenu()
     }
@@ -220,7 +220,7 @@ const ProductTable = ({ products: initialProducts, onRefresh }: ProductTableProp
     }
   }, [])
 
-  // Calculate discount percentage
+
   const calculateDiscountPercentage = (mainPrice: number, discountPrice: number) => {
     if (!mainPrice || !discountPrice) return 0
     return Math.round(((mainPrice - discountPrice) / mainPrice) * 100)
