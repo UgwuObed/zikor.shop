@@ -1,42 +1,47 @@
-// pages/store/[slug].tsx
-import { GetServerSideProps } from 'next'
-import StorefrontPage from '../../components/Store/[slug]'
-import { getSubdomain } from '../../../lib/subdomain'
+// Create this file: pages/store/[slug].tsx
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+import { getSubdomainClient } from '../../../lib/subdomain'
 
-interface StorePageProps {
-  slug: string
-}
-
-export default function StorePage({ slug }: StorePageProps) {
-  return <StorefrontPage slug={slug} />
-}
-
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const { slug } = context.params!
-  const { req } = context
+export default function StoreTestPage() {
+  const router = useRouter()
+  const { slug } = router.query
+  const [clientSubdomain, setClientSubdomain] = useState<string | null>(null)
   
-  console.log('=== SERVER SIDE PROPS DEBUG ===')
-  console.log('URL slug from params:', slug)
-  console.log('Host header:', req.headers.host)
-  
-  // Try to get subdomain from request headers
-  const subdomainFromHeaders = getSubdomain(req)
-  console.log('Subdomain from headers:', subdomainFromHeaders)
-  
-  // Use slug from URL params, fallback to subdomain if needed
-  const effectiveSlug = slug || subdomainFromHeaders
-  
-  if (!effectiveSlug) {
-    return {
-      notFound: true,
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setClientSubdomain(getSubdomainClient())
     }
-  }
+  }, [])
   
-  console.log('Effective slug for SSR:', effectiveSlug)
-  
-  return {
-    props: {
-      slug: effectiveSlug,
-    },
-  }
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial' }}>
+      <h1>Store Page Test</h1>
+      <div style={{ background: '#f0f0f0', padding: '15px', borderRadius: '5px', marginBottom: '10px' }}>
+        <h3>Route Information:</h3>
+        <p><strong>Slug from URL:</strong> {slug || 'undefined'}</p>
+        <p><strong>Client Subdomain:</strong> {clientSubdomain || 'undefined'}</p>
+        <p><strong>Router pathname:</strong> {router.pathname}</p>
+        <p><strong>Router asPath:</strong> {router.asPath}</p>
+        <p><strong>Full URL:</strong> {typeof window !== 'undefined' ? window.location.href : 'SSR'}</p>
+      </div>
+      
+      <div style={{ background: '#e8f5e8', padding: '15px', borderRadius: '5px' }}>
+        <h3>Expected Behavior:</h3>
+        <p>When you visit <code>classicpro.zikor.shop</code>, the middleware should:</p>
+        <ol>
+          <li>Detect subdomain: "classicpro"</li>
+          <li>Rewrite to: <code>/store/classicpro</code></li>
+          <li>Show slug: "classicpro"</li>
+        </ol>
+      </div>
+      
+      {slug && (
+        <div style={{ background: '#fff3cd', padding: '15px', borderRadius: '5px', marginTop: '10px' }}>
+          <p>✅ Success! Store slug detected: <strong>{slug}</strong></p>
+          <p>Your store routing is working. You can now replace this with your actual StorefrontPage component.</p>
+        </div>
+      )}
+    </div>
+  )
 }
