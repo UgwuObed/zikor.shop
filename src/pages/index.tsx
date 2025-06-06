@@ -38,15 +38,11 @@ const HomePage: React.FC = () => {
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { req } = context
   
-  // Check if this is a subdomain request
+
   const subdomain = getSubdomain(req)
   
-  console.log('=== INDEX PAGE SERVER SIDE ===')
-  console.log('Host:', req.headers.host)
-  console.log('Detected subdomain:', subdomain)
-  
-  // If there's a subdomain (and it's not a system subdomain), redirect to store
-  if (subdomain && subdomain !== 'www' && subdomain !== 'api' && subdomain !== 'admin') {
+
+  if (subdomain && subdomain !== 'www' && subdomain !== 'api' && subdomain !== 'admin' && subdomain !== 'prod') {
     console.log('Redirecting to store for subdomain:', subdomain)
     return {
       redirect: {

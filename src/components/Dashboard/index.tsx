@@ -1,7 +1,6 @@
 import { useState, useEffect, SetStateAction } from 'react';
 import { useRouter, usePathname } from "next/navigation";
 import apiClient from '../../apiClient';
-
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FiHome, FiShoppingBag, FiDollarSign, FiUsers, 
@@ -11,6 +10,7 @@ import {
 } from 'react-icons/fi';
 import { FaStore } from 'react-icons/fa';
 import { RiExchangeDollarLine } from 'react-icons/ri';
+import { FiCopy, FiExternalLink, FiCheck } from 'react-icons/fi';
 import { BsGraphUp, BsCartCheck } from 'react-icons/bs';
 import DashboardCard from '../../components/Dashboard/dashboardCard';
 import SalesChart from '../../components/Dashboard/salesChart';
@@ -38,6 +38,11 @@ const Dashboard = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [unreadNotifications, setUnreadNotifications] = useState(3);
+  
+  // Add these new state variables for store functionality
+  const [storeInfo, setStoreInfo] = useState<{slug: string, business_name: string} | null>(null);
+  const [copied, setCopied] = useState(false);
+  
   const [dashboardStats, setDashboardStats] = useState({
     totalRevenue: 0,
     totalOrders: 0,
@@ -53,6 +58,32 @@ const Dashboard = () => {
   const router = useRouter();
   const pathname = usePathname();
 
+  // Add store info fetching useEffect
+  useEffect(() => {
+    const fetchStoreInfo = async () => {
+      try {
+        const accessToken = localStorage.getItem('accessToken');
+        const response = await apiClient.get('/storefront', {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+        
+        if (response.data && response.data.storefront) {
+          setStoreInfo({
+            slug: response.data.storefront.slug,
+            business_name: response.data.storefront.business_name
+          });
+        } else if (response.data && !response.data.has_storefront) {
+          console.log('User has no storefront yet');
+        }
+      } catch (error) {
+        console.error('Error fetching store info:', error);
+      }
+    };
+
+    fetchStoreInfo();
+  }, []);
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
@@ -202,8 +233,39 @@ const Dashboard = () => {
     };
   }, []);
 
+  const storeUrl = storeInfo ? `${storeInfo.slug}.zikor.shop` : '';
+  // const storeUrl = storeInfo ? `https://${storeInfo.slug}.zikor.shop` : '';
+
+
+  const handleViewStore = () => {
+    if (storeUrl) {
+      window.open(storeUrl, '_blank');
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (storeUrl) {
+      try {
+        await navigator.clipboard.writeText(storeUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = storeUrl;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }
+    }
+  };
+
   const navItems = [
-    { name: 'Dashboard', icon: FiHome, path: '/dashboard' },
+    { name: 'Dashboard', icon: FiHome, path: '/dashboard/dashboard' },
     { 
       name: 'Products', 
       icon: FiShoppingBag, 
@@ -269,9 +331,6 @@ const Dashboard = () => {
     setActiveSubmenu(activeSubmenu === name ? null : name);
   };
 
-
-
-
   const formatCurrency: CurrencyFormatter = (amount) => {
     return new Intl.NumberFormat('en-NG', {
       style: 'currency',
@@ -281,13 +340,9 @@ const Dashboard = () => {
     }).format(amount);
   };
 
-
-
-
   const formatNumber: NumberFormatter = (number) => {
     return new Intl.NumberFormat('en').format(number);
   };
-
 
   const stats = [
     { 
@@ -342,7 +397,7 @@ const Dashboard = () => {
         )}
       </AnimatePresence>
 
-      {/* Sidebar - Desktop (always visible) and Mobile (conditional) */}
+      {/* Sidebar  */}
       <motion.aside
         className={`fixed lg:relative z-30 h-full bg-white shadow-lg ${
           mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
@@ -356,11 +411,12 @@ const Dashboard = () => {
           {sidebarExpanded && (
             <div className="flex items-center">
               <FaStore className="text-purple-600 text-2xl mr-2" />
-              <span className="text-xl font-bold text-purple-800">MyStore</span>
+              <span className="text-xl font-bold text-purple-800">
+                {storeInfo?.business_name || 'MyStore'}
+              </span>
             </div>
           )}
           
-          {/* Always show the toggle button on desktop */}
           <button
             onClick={() => setSidebarExpanded(!sidebarExpanded)}
             className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hidden lg:block"
@@ -368,7 +424,6 @@ const Dashboard = () => {
             {sidebarExpanded ? <FiX /> : <FiMenu />}
           </button>
 
-          {/* Show close button on mobile only */}
           <button
             onClick={() => setMobileMenuOpen(false)}
             className="p-2 rounded-full hover:bg-gray-100 text-gray-500 lg:hidden"
@@ -465,7 +520,7 @@ const Dashboard = () => {
         <header className="bg-white shadow-sm z-10">
           <div className="flex items-center justify-between px-6 py-4">
             <div className="flex items-center">
-              {/* Mobile menu button - only visible on mobile */}
+              {/* Mobile menu button */}
               <button
                 onClick={() => setMobileMenuOpen(true)}
                 className="lg:hidden p-2 mr-2 rounded-md text-gray-500 hover:bg-gray-100"
@@ -497,7 +552,7 @@ const Dashboard = () => {
               
               <div className="flex items-center">
                 <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-medium">
-                  JD
+                  
                 </div>
                 <span className="ml-2 hidden md:inline">John Doe</span>
               </div>
@@ -514,21 +569,76 @@ const Dashboard = () => {
           >
             {/* Dashboard Content */}
             <div className="space-y-6">
-              {/* Welcome banner */}
+              {/* Welcome banner  */}
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
                 className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-6 text-white shadow-lg"
               >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h1 className="text-2xl font-bold">Welcome back, John!</h1>
+                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center space-y-4 lg:space-y-0">
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-bold">
+                      Welcome back{storeInfo ? `, ${storeInfo.business_name}!` : '!'}
+                    </h1>
                     <p className="mt-2 opacity-90">Here's what's happening with your store today.</p>
+                    
+                    {/* Store URL Display */}
+                    {storeInfo && (
+                      <div className="mt-4 bg-white bg-opacity-20 rounded-lg p-3 max-w-md">
+                        <p className="text-sm opacity-80 mb-1">Your store URL:</p>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-medium truncate flex-1">
+                            {storeUrl}
+                          </span>
+                          <button
+                            onClick={handleCopyLink}
+                            className="bg-white bg-opacity-20 hover:bg-opacity-30 p-2 rounded-md transition-all duration-200 flex items-center justify-center"
+                            title="Copy store link"
+                          >
+                            {copied ? (
+                              <FiCheck className="text-green-300" />
+                            ) : (
+                              <FiCopy className="text-white" />
+                            )}
+                          </button>
+                        </div>
+                        {copied && (
+                          <motion.p
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="text-xs text-green-300 mt-1"
+                          >
+                            Link copied to clipboard!
+                          </motion.p>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <button className="bg-white text-purple-600 px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all">
-                    View Store
-                  </button>
+                  
+                  <div className="flex space-x-3">
+                    {/* Copy Store Link Button */}
+                    <button
+                      onClick={handleCopyLink}
+                      disabled={!storeInfo}
+                      className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {copied ? <FiCheck /> : <FiCopy />}
+                      <span className="hidden sm:inline">
+                        {copied ? 'Copied!' : 'Copy Link'}
+                      </span>
+                    </button>
+                    
+                    {/* View Store Button */}
+                    <button
+                      onClick={handleViewStore}
+                      disabled={!storeInfo}
+                      className="bg-white text-purple-600 px-4 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-all duration-200 flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <FiExternalLink />
+                      <span>View Store</span>
+                    </button>
+                  </div>
                 </div>
               </motion.div>
 

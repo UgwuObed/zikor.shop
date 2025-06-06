@@ -18,7 +18,7 @@ apiClient.interceptors.request.use(config => {
   return Promise.reject(error);
 });
 
-// Add interceptor to save cart token from responses
+
 apiClient.interceptors.response.use(response => {
   if (response.data && response.data.cart && response.data.cart.cart_token) {
     localStorage.setItem('cart_token', response.data.cart.cart_token);

@@ -16,7 +16,6 @@ import ProductDetailModal from "../../components/Storeview/modal"
 import StorefrontFooter from "../../components/Storeview/footer"
 import CartNotification from "../../components/Storeview/notification"
 
-// Keep all your existing interfaces
 interface StorefrontData {
   id: number
   business_name: string
@@ -101,10 +100,9 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
     setShowNotification
   } = useCart();
 
-  // Simplified slug handling - we get it from props now
+  
   useEffect(() => {
-    console.log('=== STORE PAGE LOADED ===')
-    console.log('Slug from props:', slug)
+
     
     if (!slug) {
       setError('No store slug provided')
@@ -113,7 +111,7 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
     }
   }, [slug])
 
-  // Fetch shipping fees
+ 
   useEffect(() => {
     if (!slug) return;
     
@@ -132,7 +130,7 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
     fetchShippingFees();
   }, [slug]);
 
-  // Fetch storefront data
+ 
   useEffect(() => {
     if (!slug) {
       setLoading(false);
@@ -231,7 +229,6 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
             className="w-16 h-16 border-4 border-dashed rounded-full animate-spin mx-auto mb-4"
             style={{ borderTopColor: themeColor }}
           ></div>
-          <p className="text-gray-600">Loading store...</p>
         </div>
       </div>
     )
@@ -259,7 +256,7 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
   return (
     <div style={{ "--primary-color": themeColor } as React.CSSProperties}>
       <Head>
-        <title>{storefront.business_name} | Shop Online</title>
+        <title>{storefront.business_name} | {storefront.tagline} </title>
         <meta name="description" content={storefront.tagline || `Shop online at ${storefront.business_name}`} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
@@ -404,16 +401,15 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
   )
 }
 
-// Server-side props to get the slug and validate it
+
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { slug } = context.params!
   const { req } = context
   
-  console.log('=== STORE PAGE SERVER SIDE PROPS ===')
-  console.log('URL slug from params:', slug)
-  console.log('Host header:', req.headers.host)
-  
-  // Validate that we have a slug
+
+  // console.log('URL slug from params:', slug)
+ 
+
   if (!slug || typeof slug !== 'string') {
     console.log('Invalid slug, returning 404')
     return {
@@ -421,12 +417,9 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     }
   }
   
-  // Optional: validate subdomain matches slug for extra security
   const subdomainFromHeaders = getSubdomain(req)
-  console.log('Subdomain from headers:', subdomainFromHeaders)
-  console.log('Slug from URL:', slug)
+
   
-  // You can add validation here if needed
   // if (subdomainFromHeaders && subdomainFromHeaders !== slug) {
   //   console.log('Subdomain mismatch, redirecting')
   //   return {

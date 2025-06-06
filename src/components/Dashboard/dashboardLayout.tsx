@@ -31,7 +31,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const navItems = [
-    { name: 'Dashboard', icon: FiHome, path: '/dashboard' },
+    { name: 'Dashboard', icon: FiHome, path: '/dashboard/dashboard' },
     { 
       name: 'Products', 
       icon: FiShoppingBag, 
@@ -273,10 +273,10 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
               </button>
               
               <div className="flex items-center">
-                <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-medium">
+                {/* <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 font-medium">
                   JD
                 </div>
-                <span className="ml-2 hidden md:inline">John Doe</span>
+                <span className="ml-2 hidden md:inline">John Doe</span> */}
               </div>
             </div>
           </div>

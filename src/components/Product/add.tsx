@@ -693,7 +693,7 @@ const AddProduct = () => {
             <button
               onClick={() => {
                 setUploadSuccess(false);
-                router.push('/dashboard');
+                router.push('/dashboard/dashboard');
               }}
               className="px-4 py-2 bg-purple-800 text-white rounded-lg hover:bg-purple-600 transition-colors"
             >
