@@ -23,7 +23,7 @@ export const footerDetails: {
         }
     ],
     email: 'support@zikor.shop',
-    telephone: '+234 810 800 0000',
+    telephone: '+234 810 398 2074',
     socials: {
         // github: 'https://github.com',
         // x: 'https://twitter.com/x',

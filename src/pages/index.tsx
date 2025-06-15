@@ -1,6 +1,7 @@
 import { GetServerSideProps } from 'next'
 import { getSubdomain } from '../../lib/subdomain'
 import Hero from "../components/Hero"
+import Header from '../components/Header'
 import Pricing from "../components/Pricing/Pricing"
 import FAQ from "../components/FAQ"
 import Logos from "../components/Logos"
@@ -9,32 +10,45 @@ import Container from "../components/Container"
 import Section from "../components/Section"
 import Stats from "../components/Stats"
 import CTA from "../components/CTA"
-// import "./globals.css"
+import Footer from '../components/Footer'
+
 
 const HomePage: React.FC = () => {
   return (
     <>
-      <Hero />
-      <Logos />
-      <Container>
-        <Benefits />
 
-        <Section
-          id="pricing"
-          title="Pricing"
-          description="Simple, transparent pricing. No surprises."
-        >
+      <Header />
+        <div className="relative overflow-hidden">
+        <Hero />
+      </div>
+      <div className="relative -mt-10 z-10">
+        <Logos />
+      </div>
+      <Container>
+      
+
+    <div className="mb-16"> 
+      <Benefits />
+    </div>
+
+         
           <Pricing />
-        </Section>
+    
+    
 
         <FAQ />
+
+        <div className="mt-16 mb-1">
         <Stats />
+        </div>
         <CTA />
       </Container>
+      <Footer />
+      
     </>
   )
-}
 
+}
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { req } = context
   
@@ -43,7 +57,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   
 
   if (subdomain && subdomain !== 'www' && subdomain !== 'api' && subdomain !== 'admin' && subdomain !== 'prod') {
-    console.log('Redirecting to store for subdomain:', subdomain)
+    // console.log('Redirecting to store for subdomain:', subdomain)
     return {
       redirect: {
         destination: `/store/${subdomain}`,
@@ -52,7 +66,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     }
   }
   
-  console.log('Showing main homepage')
+  // console.log('Showing main homepage')
   return {
     props: {},
   }

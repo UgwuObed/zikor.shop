@@ -1,4 +1,4 @@
-// data/faq.ts
+
 
 export const faqs = [
     {
