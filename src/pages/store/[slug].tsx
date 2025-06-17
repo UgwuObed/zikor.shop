@@ -10,7 +10,7 @@ import apiClient from '../../apiClient'
 import StorefrontHeader from "../../components/Storeview/header"
 import ProductCard from "../../components/Storeview/card"
 import ShoppingCart from "../../components/Storeview/cart"
-import ProductFilter from "../../components/Storeview/filter"
+// import ProductFilter from "../../components/Storeview/filter"
 import ProductSearch from "../../components/Storeview/search"
 import ProductDetailModal from "../../components/Storeview/modal"
 import StorefrontFooter from "../../components/Storeview/footer"
@@ -76,7 +76,7 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
   const [error, setError] = useState<string | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000])
-  const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
+  // const [mobileFilterOpen, setMobileFilterOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showProductModal, setShowProductModal] = useState(false)
   const [shippingFees, setShippingFees] = useState<ShippingFee[]>([]);
@@ -270,7 +270,7 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
 
       <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 min-h-screen">
         {/* Mobile filters toggle */}
-        <div className="lg:hidden mb-4 flex justify-between items-center">
+        {/* <div className="lg:hidden mb-4 flex justify-between items-center">
           <button
             onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
             className="flex items-center text-sm font-medium px-3 py-2 rounded-lg"
@@ -280,11 +280,11 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
           </button>
 
           <div className="text-sm text-gray-500">{filteredProducts.length} products</div>
-        </div>
+        </div> */}
 
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Filters sidebar */}
-          <div className={`${mobileFilterOpen ? "block" : "hidden"} lg:block lg:w-64 flex-shrink-0`}>
+          {/* <div className={`${mobileFilterOpen ? "block" : "hidden"} lg:block lg:w-64 flex-shrink-0`}>
             <ProductFilter
               categories={categories}
               minPrice={priceRange[0]}
@@ -301,7 +301,7 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
               themeColor={themeColor}
               mobileView={true}
             />
-          </div>
+          </div> */}
 
           {/* Main content */}
           <div className="flex-1">
