@@ -94,47 +94,90 @@ const EditProductForm: React.FC<EditProductFormProps> = ({ product, onClose, onS
     setCurrentImages((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  
+  if (!validateForm()) {
+    return
+  }
+  
+  setIsLoading(true)
+
+  try {
+    const accessToken = localStorage.getItem("accessToken")
     
-    if (!validateForm()) {
-      return
-    }
+    const hasImageChanges = imageFiles.length > 0 || currentImages.length !== (product.image_urls?.length || 0)
     
-    setIsLoading(true)
-
-    try {
-      const accessToken = localStorage.getItem("accessToken")
+    if (!hasImageChanges) {
+    
+      const { image, ...updateData } = formData
       
-      const submitData = new FormData()
-      
-      Object.entries(formData).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          submitData.append(key, value.toString())
-        }
-      })
-      
-      submitData.append('current_images', JSON.stringify(currentImages))
-
-      imageFiles.forEach((file) => {
-        submitData.append('images[]', file)
-      })
-
-      await apiClient.patch(`/products/${product.id}`, submitData, {
+      const response = await apiClient.patch(`/products/${product.id}`, updateData, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
       })
-
+      
+      console.log('Basic update successful:', response.data)
       onSave()
-    } catch (error) {
-      console.error("Error updating product:", error)
-      alert("Failed to update product. Please try again.")
-    } finally {
-      setIsLoading(false)
+      return
     }
+    
+    const submitData = new FormData()
+    
+    const { image, ...basicData } = formData
+    Object.entries(basicData).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        submitData.append(key, value.toString())
+      }
+    })
+    
+    if (currentImages.length > 0) {
+      currentImages.forEach((imageUrl) => {
+        submitData.append('keep_images[]', imageUrl)
+      })
+    }
+ 
+    if (imageFiles.length > 0) {
+      imageFiles.forEach((file) => {
+        submitData.append('images[]', file)
+      })
+    }
+
+    // console.log('=== FormData Debug ===')
+    // console.log('Current images to keep:', currentImages)
+    // console.log('New files to upload:', imageFiles.length)
+    for (let [key, value] of submitData.entries()) {
+      if (value instanceof File) {
+        console.log(key, 'FILE:', value.name, value.type, value.size)
+      } else {
+        console.log(key, value)
+      }
+    }
+
+    const response = await apiClient.patch(`/products/${product.id}`, submitData, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+
+    // console.log('Update with images successful:', response.data)
+    onSave()
+  } catch (error: any) {
+    console.error("Full error:", error)
+    console.error("Error response:", error.response?.data)
+    
+    if (error.response?.data?.error) {
+      const errorMessages = Object.values(error.response.data.error).flat()
+      alert(`Failed to update product: ${errorMessages.join(', ')}`)
+    } else {
+      alert("Failed to update product. Please try again.")
+    }
+  } finally {
+    setIsLoading(false)
   }
+}
 
   const calculateSavings = () => {
     if (formData.discount_price && formData.main_price > formData.discount_price) {

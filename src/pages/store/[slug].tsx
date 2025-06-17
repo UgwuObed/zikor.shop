@@ -268,41 +268,8 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
         onCartClick={() => setShowCart(true)}
       />
 
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 min-h-screen">
-        {/* Mobile filters toggle */}
-        {/* <div className="lg:hidden mb-4 flex justify-between items-center">
-          <button
-            onClick={() => setMobileFilterOpen(!mobileFilterOpen)}
-            className="flex items-center text-sm font-medium px-3 py-2 rounded-lg"
-            style={{ backgroundColor: `${themeColor}15`, color: themeColor }}
-          >
-            {mobileFilterOpen ? "Close Filters" : "Show Filters"}
-          </button>
-
-          <div className="text-sm text-gray-500">{filteredProducts.length} products</div>
-        </div> */}
-
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 min-h-screen">      
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
-          {/* Filters sidebar */}
-          {/* <div className={`${mobileFilterOpen ? "block" : "hidden"} lg:block lg:w-64 flex-shrink-0`}>
-            <ProductFilter
-              categories={categories}
-              minPrice={priceRange[0]}
-              maxPrice={priceRange[1]}
-              onFilterChange={(filters) => {
-                if (filters.categories.length > 0) {
-                  const categoryName = categories.find((c) => c.id === filters.categories[0])?.name || null
-                  setSelectedCategory(categoryName)
-                } else {
-                  setSelectedCategory(null)
-                }
-                setPriceRange([filters.priceRange.min, filters.priceRange.max])
-              }}
-              themeColor={themeColor}
-              mobileView={true}
-            />
-          </div> */}
-
           {/* Main content */}
           <div className="flex-1">
             <ProductSearch
