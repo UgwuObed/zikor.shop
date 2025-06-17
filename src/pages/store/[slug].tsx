@@ -10,7 +10,7 @@ import apiClient from '../../apiClient'
 import StorefrontHeader from "../../components/Storeview/header"
 import ProductCard from "../../components/Storeview/card"
 import ShoppingCart from "../../components/Storeview/cart"
-// import ProductFilter from "../../components/Storeview/filter"
+import ProductFilter from "../../components/Storeview/filter"
 import ProductSearch from "../../components/Storeview/search"
 import ProductDetailModal from "../../components/Storeview/modal"
 import StorefrontFooter from "../../components/Storeview/footer"
@@ -284,7 +284,7 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
 
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
           {/* Filters sidebar */}
-          {/* <div className={`${mobileFilterOpen ? "block" : "hidden"} lg:block lg:w-64 flex-shrink-0`}>
+          <div className={`${mobileFilterOpen ? "block" : "hidden"} lg:block lg:w-64 flex-shrink-0`}>
             <ProductFilter
               categories={categories}
               minPrice={priceRange[0]}
@@ -301,7 +301,7 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
               themeColor={themeColor}
               mobileView={true}
             />
-          </div> */}
+          </div>
 
           {/* Main content */}
           <div className="flex-1">

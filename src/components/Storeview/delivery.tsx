@@ -3,7 +3,7 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Truck, MapPin, Clock, Home, Package, Edit, Info, AlertCircle, ShoppingBag } from "lucide-react"
+import { Truck, MapPin, Clock, Home, Package, Edit, Info, Check, AlertCircle, ShoppingBag } from "lucide-react"
 
 interface ShippingFee {
   id: number
@@ -30,6 +30,8 @@ interface DeliveryDetailsProps {
   }
   cartItems: Array<{ id: number; quantity: number }>
   onUpdateBuyerInfo: (info: any) => void
+  onNext: () => void
+  onBack: () => void
 }
 
 const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
@@ -38,6 +40,8 @@ const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
   buyerInfo,
   cartItems,
   onUpdateBuyerInfo,
+  onNext,
+  onBack,
 }) => {
   const [deliveryMethod, setDeliveryMethod] = useState<"pickup" | "delivery">(buyerInfo.deliveryMethod || "delivery")
   const [selectedLocation, setSelectedLocation] = useState<ShippingFee | null>(buyerInfo.deliveryLocation || null)
@@ -91,60 +95,9 @@ const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
       fee += additionalItems * Number.parseFloat(selectedLocation.additionalFee)
     }
 
+
     setTotalShippingFee(fee)
   }, [deliveryMethod, selectedLocation, cartItems])
-
-  // Auto-update buyer info when delivery method changes
-  useEffect(() => {
-    onUpdateBuyerInfo({
-      ...buyerInfo,
-      deliveryMethod,
-      deliveryLocation: deliveryMethod === "pickup" ? null : selectedLocation,
-      address: deliveryMethod === "pickup" ? "Pickup" : address,
-      deliveryNotes: notes,
-      shippingFee: totalShippingFee,
-    })
-  }, [deliveryMethod])
-
-  // Auto-update buyer info when selected location changes
-  useEffect(() => {
-    if (deliveryMethod === "delivery") {
-      onUpdateBuyerInfo({
-        ...buyerInfo,
-        deliveryMethod,
-        deliveryLocation: selectedLocation,
-        address,
-        deliveryNotes: notes,
-        shippingFee: totalShippingFee,
-      })
-    }
-  }, [selectedLocation, totalShippingFee])
-
-  // Auto-update buyer info when address changes
-  useEffect(() => {
-    if (deliveryMethod === "delivery" && address) {
-      onUpdateBuyerInfo({
-        ...buyerInfo,
-        deliveryMethod,
-        deliveryLocation: selectedLocation,
-        address,
-        deliveryNotes: notes,
-        shippingFee: totalShippingFee,
-      })
-    }
-  }, [address])
-
-  // Auto-update buyer info when notes change
-  useEffect(() => {
-    onUpdateBuyerInfo({
-      ...buyerInfo,
-      deliveryMethod,
-      deliveryLocation: deliveryMethod === "pickup" ? null : selectedLocation,
-      address: deliveryMethod === "pickup" ? "Pickup" : address,
-      deliveryNotes: notes,
-      shippingFee: totalShippingFee,
-    })
-  }, [notes])
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setAddress(e.target.value)
@@ -155,17 +108,83 @@ const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
     setSelectedLocation(fee)
   }
 
+  const handleSubmit = () => {
+    if (deliveryMethod === "delivery" && !selectedLocation) {
+      setErrorMessage("Please select a delivery location")
+      return
+    }
+
+    if (deliveryMethod === "delivery" && !address.trim()) {
+      setErrorMessage("Please enter your delivery address")
+      return
+    }
+
+    onUpdateBuyerInfo({
+      ...buyerInfo,
+      address: deliveryMethod === "delivery" ? address : "Pickup",
+      deliveryMethod,
+      deliveryLocation: selectedLocation,
+      deliveryNotes: notes,
+      shippingFee: totalShippingFee,
+    })
+
+    onNext()
+  }
+
   const saveAddress = () => {
     setShowAddressModal(false)
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 p-3 sm:p-4 max-h-[calc(100vh-180px)] overflow-y-auto">
+      <div className="checkout-steps mb-4 sm:mb-6">
+        <div className="flex items-center justify-between">
+          <div className="step-item flex flex-col items-center">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-1 bg-gray-100">
+              <Check size={12} className="text-gray-500 sm:hidden" />
+              <Check size={16} className="text-gray-500 hidden sm:block" />
+            </div>
+            <div className="text-xs text-gray-500">Cart</div>
+          </div>
+          <div className="step-line flex-1 h-1 mx-1 sm:mx-2" style={{ backgroundColor: themeColor }}></div>
+          <div className="step-item flex flex-col items-center">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-1 bg-gray-100">
+              <Check size={12} className="text-gray-500 sm:hidden" />
+              <Check size={16} className="text-gray-500 hidden sm:block" />
+            </div>
+            <div className="text-xs text-gray-500">Details</div>
+          </div>
+          <div className="step-line flex-1 h-1 mx-1 sm:mx-2" style={{ backgroundColor: themeColor }}></div>
+          <div className="step-item flex flex-col items-center">
+            <div
+              className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-1"
+              style={{ backgroundColor: themeColor }}
+            >
+              <motion.div initial={{ scale: 0.5 }} animate={{ scale: 1 }}>
+                <Truck size={12} className="text-white sm:hidden" />
+                <Truck size={16} className="text-white hidden sm:block" />
+              </motion.div>
+            </div>
+            <div className="text-xs font-medium" style={{ color: themeColor }}>
+              Delivery
+            </div>
+          </div>
+          <div className="step-line flex-1 h-1 mx-1 sm:mx-2" style={{ backgroundColor: `${themeColor}20` }}></div>
+          <div className="step-item flex flex-col items-center">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center mb-1 bg-gray-100">
+              <Check size={12} className="text-gray-500 sm:hidden" />
+              <Check size={16} className="text-gray-500 hidden sm:block" />
+            </div>
+            <div className="text-xs text-gray-500">Confirm</div>
+          </div>
+        </div>
+      </div>
+
       {errorMessage && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-red-50 border-l-4 border-red-500 p-3 sm:p-4 rounded-lg"
+          className="bg-red-50 border-l-4 border-red-500 p-3 sm:p-4 mb-3 sm:mb-4 rounded-lg"
         >
           <div className="flex">
             <div className="flex-shrink-0">
@@ -183,16 +202,14 @@ const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm bg-white border"
+        className="p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-md bg-white border mb-4 sm:mb-5"
         style={{ borderColor: `${themeColor}20` }}
       >
-        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center" style={{ color: themeColor }}>
-          <Truck size={16} className="mr-1.5 sm:mr-2 sm:hidden" />
-          <Truck size={18} className="mr-2 hidden sm:block" />
+        <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4" style={{ color: themeColor }}>
           Delivery Method
         </h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -204,7 +221,7 @@ const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
             onClick={() => setDeliveryMethod("delivery")}
           >
             <Truck
-              size={28}
+              size={28} 
               className="mb-2"
               style={{ color: deliveryMethod === "delivery" ? themeColor : "#6b7280" }}
             />
@@ -251,96 +268,72 @@ const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div
-              className="p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm bg-white border mb-4 sm:mb-5"
-              style={{ borderColor: `${themeColor}20` }}
-            >
-              <h3
-                className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center"
-                style={{ color: themeColor }}
-              >
-                <MapPin size={16} className="mr-1.5 sm:mr-2 sm:hidden" />
-                <MapPin size={18} className="mr-2 hidden sm:block" />
-                Delivery Location
+            <div className="p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-md bg-white border mb-4 sm:mb-5" style={{ borderColor: `${themeColor}20` }}>
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4" style={{ color: themeColor }}>
+                <div className="flex items-center">
+                  <MapPin size={16} className="mr-1.5 sm:mr-2 sm:hidden" />
+                  <MapPin size={18} className="mr-2 hidden sm:block" />
+                  Delivery Location
+                </div>
               </h3>
 
               {shippingFees.length > 0 ? (
-                <div className="space-y-3 sm:space-y-4">
+                <div className="space-y-3">
                   {Object.entries(groupedShippingFees).map(([state, fees]) => (
-                    <div key={state} className="mb-3 sm:mb-4">
+                    <div key={state} className="mb-3">
                       <h4 className="text-xs sm:text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">{state}</h4>
                       <div className="relative">
                         <select
-                          className="w-full appearance-none bg-white border-2 rounded-lg p-2.5 sm:p-3 pr-8 sm:pr-10 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-opacity-50"
-                          style={
-                            {
-                              borderColor: `${themeColor}30`,
-                              "--tw-ring-color": themeColor,
-                            } as React.CSSProperties
-                          }
+                          className="w-full appearance-none bg-white border-2 rounded-lg p-2.5 pr-8 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                          style={{
+                            borderColor: `${themeColor}30`,
+                            "--tw-ring-color": themeColor,
+                          } as React.CSSProperties}
                           value={selectedLocation?.id.toString() || ""}
                           onChange={(e) => {
-                            const selectedFee = fees.find((fee) => fee.id.toString() === e.target.value)
-                            if (selectedFee) handleLocationSelect(selectedFee)
+                            const selectedFee = fees.find(fee => fee.id.toString() === e.target.value);
+                            if (selectedFee) handleLocationSelect(selectedFee);
                           }}
                         >
-                          <option value="" disabled>
-                            Select a location
-                          </option>
+                          <option value="" disabled>Select a location</option>
                           {fees.map((fee) => (
                             <option key={fee.id} value={fee.id.toString()}>
                               {fee.name} - ₦{Number.parseFloat(fee.baseFee).toLocaleString()}
                             </option>
                           ))}
                         </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 sm:px-3">
-                          <svg
-                            className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M19 9l-7 7-7-7"
-                            ></path>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
+                          <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
                           </svg>
                         </div>
                       </div>
-
+                      
                       {selectedLocation && selectedLocation.state === state && (
-                        <div
-                          className="mt-2 sm:mt-3 p-2 sm:p-3 rounded-lg text-xs sm:text-sm bg-gray-50"
-                          style={{ borderLeft: `3px solid ${themeColor}` }}
+                        <div 
+                          className="mt-2 p-2 rounded-lg text-xs bg-gray-50"
+                          style={{ borderLeft: `2px solid ${themeColor}` }}
                         >
                           <div className="flex justify-between">
                             <span className="text-gray-600">Base fee:</span>
-                            <span className="font-medium">
-                              ₦{Number.parseFloat(selectedLocation.baseFee).toLocaleString()}
-                            </span>
+                            <span className="font-medium">₦{Number.parseFloat(selectedLocation.baseFee).toLocaleString()}</span>
                           </div>
-
-                          {Number.parseFloat(selectedLocation.additionalFee) > 0 &&
-                            cartItems.reduce((sum, item) => sum + item.quantity, 0) > 10 && (
-                              <div className="text-xs sm:text-sm mt-2">
-                                <div className="flex justify-between">
-                                  <span className="text-gray-600">Additional items fee:</span>
-                                  <span className="font-medium">
-                                    ₦
-                                    {(
-                                      Number.parseFloat(selectedLocation.additionalFee) *
-                                      (cartItems.reduce((sum, item) => sum + item.quantity, 0) - 10)
-                                    ).toLocaleString()}
-                                  </span>
-                                </div>
-                                <div className="text-xs text-gray-500 mt-1">
-                                  ({cartItems.reduce((sum, item) => sum + item.quantity, 0) - 10} items × ₦
-                                  {Number.parseFloat(selectedLocation.additionalFee).toLocaleString()})
-                                </div>
+                          
+                          {Number.parseFloat(selectedLocation.additionalFee) > 0 && cartItems.reduce((sum, item) => sum + item.quantity, 0) > 10 && (
+                            <div className="text-2xs sm:text-xs mt-1">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600">Additional items fee:</span>
+                                <span className="font-medium">
+                                  ₦{(Number.parseFloat(selectedLocation.additionalFee) * 
+                                    (cartItems.reduce((sum, item) => sum + item.quantity, 0) - 10)).toLocaleString()}
+                                </span>
                               </div>
-                            )}
+                              <div className="text-2xs text-gray-500 mt-0.5">
+                                ({cartItems.reduce((sum, item) => sum + item.quantity, 0) - 10} items × 
+                                ₦{Number.parseFloat(selectedLocation.additionalFee).toLocaleString()})
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -348,16 +341,13 @@ const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
                 </div>
               ) : (
                 <div className="text-center p-3 sm:p-4 bg-gray-50 rounded-lg">
-                  <p className="text-xs sm:text-sm text-gray-500">No delivery locations available</p>
+                  <p className="text-sm text-gray-500">No delivery locations available</p>
                 </div>
               )}
 
               {/* Show calculated shipping fee */}
               {selectedLocation && (
-                <div
-                  className="mt-3 sm:mt-4 p-2.5 sm:p-3 rounded-lg bg-gray-50 border"
-                  style={{ borderColor: `${themeColor}20` }}
-                >
+                <div className="mt-3 sm:mt-4 p-2.5 sm:p-3 rounded-lg bg-gray-50 border" style={{ borderColor: `${themeColor}20` }}>
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-2 sm:space-y-0">
                     <div className="flex items-center">
                       <ShoppingBag size={14} className="mr-1.5 sm:mr-2 text-gray-500 sm:hidden" />
@@ -374,42 +364,35 @@ const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
                       </span>
                     </div>
                   </div>
-
+                  
                   {/* Delivery summary */}
-                  <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-600">
+                  <div className="mt-2 pt-2 border-t border-gray-200 text-2xs sm:text-xs text-gray-600">
                     <p>
-                      Delivery to{" "}
-                      <span className="font-medium">
-                        {selectedLocation.name}, {selectedLocation.state}
-                      </span>
-                      {cartItems.reduce((sum, item) => sum + item.quantity, 0) > 10 && (
-                        <span>
-                          {" "}
-                          with additional fees for {cartItems.reduce((sum, item) => sum + item.quantity, 0)} items
-                        </span>
-                      )}
+                      Delivery to <span className="font-medium">{selectedLocation.name}, {selectedLocation.state}</span>
+                      {cartItems.reduce((sum, item) => sum + item.quantity, 0) > 10 && 
+                        <span> with additional fees for {cartItems.reduce((sum, item) => sum + item.quantity, 0)} items</span>
+                      }
                     </p>
                   </div>
                 </div>
               )}
             </div>
 
-            <div
-              className="p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm bg-white border mb-4 sm:mb-5"
-              style={{ borderColor: `${themeColor}20` }}
-            >
+            <div className="p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-md bg-white border mb-4 sm:mb-5" style={{ borderColor: `${themeColor}20` }}>
               <div className="flex justify-between items-center mb-3 sm:mb-4">
-                <h3 className="text-base sm:text-lg font-semibold flex items-center" style={{ color: themeColor }}>
-                  <Home size={16} className="mr-1.5 sm:mr-2 sm:hidden" />
-                  <Home size={18} className="mr-2 hidden sm:block" />
-                  Delivery Address
+                <h3 className="text-base sm:text-lg font-semibold" style={{ color: themeColor }}>
+                  <div className="flex items-center">
+                    <Home size={16} className="mr-1.5 sm:mr-2 sm:hidden" />
+                    <Home size={18} className="mr-2 hidden sm:block" />
+                    Delivery Address
+                  </div>
                 </h3>
 
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setShowAddressModal(true)}
-                  className="text-xs font-medium px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center"
+                  className="text-2xs sm:text-xs font-medium px-2 sm:px-3 py-1 sm:py-1.5 rounded-full flex items-center"
                   style={{ backgroundColor: `${themeColor}15`, color: themeColor }}
                 >
                   <Edit size={12} className="mr-0.5 sm:mr-1 sm:hidden" />
@@ -419,10 +402,7 @@ const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
               </div>
 
               {address ? (
-                <div
-                  className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border"
-                  style={{ borderColor: `${themeColor}20` }}
-                >
+                <div className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border" style={{ borderColor: `${themeColor}20` }}>
                   <p className="text-xs sm:text-sm text-gray-800 whitespace-pre-line">{address}</p>
                 </div>
               ) : (
@@ -436,17 +416,13 @@ const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
               )}
             </div>
 
-            <div
-              className="p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm bg-white border mb-4 sm:mb-5"
-              style={{ borderColor: `${themeColor}20` }}
-            >
-              <h3
-                className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center"
-                style={{ color: themeColor }}
-              >
-                <Info size={16} className="mr-1.5 sm:mr-2 sm:hidden" />
-                <Info size={18} className="mr-2 hidden sm:block" />
-                Delivery Notes (Optional)
+            <div className="p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-md bg-white border mb-4 sm:mb-5" style={{ borderColor: `${themeColor}20` }}>
+              <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4" style={{ color: themeColor }}>
+                <div className="flex items-center">
+                  <Info size={16} className="mr-1.5 sm:mr-2 sm:hidden" />
+                  <Info size={18} className="mr-2 hidden sm:block" />
+                  Delivery Notes (Optional)
+                </div>
               </h3>
 
               <textarea
@@ -471,33 +447,27 @@ const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="p-4 sm:p-5 rounded-xl sm:rounded-2xl shadow-sm bg-white border mb-4 sm:mb-5"
+            className="p-3 sm:p-5 rounded-xl sm:rounded-2xl shadow-md bg-white border mb-4 sm:mb-5"
             style={{ borderColor: `${themeColor}20` }}
           >
-            <h3
-              className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 flex items-center"
-              style={{ color: themeColor }}
-            >
-              <Clock size={16} className="mr-1.5 sm:mr-2 sm:hidden" />
-              <Clock size={18} className="mr-2 hidden sm:block" />
-              Pickup Information
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4" style={{ color: themeColor }}>
+              <div className="flex items-center">
+                <Clock size={16} className="mr-1.5 sm:mr-2 sm:hidden" />
+                <Clock size={18} className="mr-2 hidden sm:block" />
+                Pickup Information
+              </div>
             </h3>
 
-            <div
-              className="bg-gray-50 p-3 sm:p-4 rounded-lg sm:rounded-xl mb-3 sm:mb-4 border"
-              style={{ borderColor: `${themeColor}20` }}
-            >
+            <div className="bg-gray-50 p-3 sm:p-4 rounded-lg sm:rounded-xl mb-3 sm:mb-4 border" style={{ borderColor: `${themeColor}20` }}>
               <h4 className="font-medium text-xs sm:text-sm text-gray-800 mb-1.5 sm:mb-2">Pickup Location</h4>
-              <p className="text-xs text-gray-600">
+              <p className="text-2xs sm:text-xs text-gray-600">
                 You'll need to pick up your order directly from our store location. Our team will contact you when your
                 order is ready.
               </p>
             </div>
 
             <div>
-              <h4 className="font-medium text-xs sm:text-sm text-gray-800 mb-1.5 sm:mb-2">
-                Notes for Pickup (Optional)
-              </h4>
+              <h4 className="font-medium text-xs sm:text-sm text-gray-800 mb-1.5 sm:mb-2">Notes for Pickup (Optional)</h4>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
@@ -515,6 +485,34 @@ const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
         )}
       </AnimatePresence>
 
+      {/* Navigation Buttons */}
+      <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={onBack}
+          className="flex-1 py-2.5 sm:py-3 rounded-full font-medium border flex items-center justify-center text-xs sm:text-sm"
+          style={{
+            backgroundColor: "white",
+            color: themeColor,
+            borderColor: `${themeColor}30`,
+          }}
+        >
+          Back
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleSubmit}
+          className="flex-1 py-2.5 sm:py-3 rounded-full font-medium text-white flex items-center justify-center shadow-md text-xs sm:text-sm"
+          style={{
+            backgroundImage: `linear-gradient(135deg, ${themeColor}, ${adjustColorLightness(themeColor, 0.8)})`,
+          }}
+        >
+          Continue
+        </motion.button>
+      </div>
+
       {/* Address Modal */}
       <AnimatePresence>
         {showAddressModal && (
@@ -530,12 +528,12 @@ const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
               exit={{ scale: 0.9, y: 20 }}
               className="bg-white rounded-xl sm:rounded-2xl shadow-xl max-w-md w-full overflow-hidden mx-3"
             >
-              <div className="p-4 sm:p-5 border-b" style={{ borderColor: `${themeColor}20` }}>
+              <div className="p-3 sm:p-5 border-b" style={{ borderColor: `${themeColor}20` }}>
                 <h3 className="text-base sm:text-lg font-semibold" style={{ color: themeColor }}>
                   Delivery Address
                 </h3>
               </div>
-              <div className="p-4 sm:p-5">
+              <div className="p-3 sm:p-5">
                 <textarea
                   value={address}
                   onChange={handleAddressChange}
