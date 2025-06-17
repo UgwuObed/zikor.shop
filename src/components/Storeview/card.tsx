@@ -69,7 +69,7 @@ const ProductCard = ({
     setCurrentImageIndex((prev) => (prev === 0 ? product.image_urls!.length - 1 : prev - 1))
   }
 
-  // Set up auto-rotate for images when hovering
+  
   useEffect(() => {
     let timer: NodeJS.Timeout
     if (isHovered && hasMultipleImages) {
@@ -90,13 +90,13 @@ const ProductCard = ({
     e.stopPropagation()
     setAddingToCart(true)
     
-    // Simulate API call
+   
     setTimeout(() => {
       onAddToCart(product.id)
       setAddingToCart(false)
       setIsAddedToCart(true)
       
-      // Reset added status after delay
+    
       setTimeout(() => setIsAddedToCart(false), 1500)
     }, 600)
   }
@@ -111,7 +111,7 @@ const ProductCard = ({
     if (onQuickView) onQuickView(product.id)
   }
 
-  // Card animation variants
+  
   const cardVariants = {
     normal: { y: 0 },
     hover: { 
@@ -124,7 +124,7 @@ const ProductCard = ({
     }
   }
   
-  // Action button variants
+
   const actionButtonVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: (custom: number) => ({ 
@@ -198,7 +198,7 @@ const ProductCard = ({
           </motion.div>
         </AnimatePresence>
 
-        {/* Image Navigation Arrows - conditionally showing on hover */}
+        {/* Image Navigation Arrows  */}
         {hasMultipleImages && isHovered && (
           <>
             <motion.button
@@ -250,7 +250,7 @@ const ProductCard = ({
           </div>
         )}
 
-        {/* Quick Actions - Show on hover, staggered animation */}
+        {/* Quick Actions */}
         <div className={`absolute top-3 right-3 flex flex-col space-y-2 transition-opacity duration-300 ${
           isHovered ? "opacity-100" : "opacity-0"
         }`}>
