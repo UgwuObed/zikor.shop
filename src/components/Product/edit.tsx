@@ -148,7 +148,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     // console.log('=== FormData Debug ===')
     // console.log('Current images to keep:', currentImages)
     // console.log('New files to upload:', imageFiles.length)
-    for (let [key, value] of submitData.entries()) {
+    for (const [key, value] of submitData.entries()) {
       if (value instanceof File) {
         console.log(key, 'FILE:', value.name, value.type, value.size)
       } else {
