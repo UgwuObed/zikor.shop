@@ -340,7 +340,7 @@ const ProductTable = ({ products: initialProducts, onRefresh }: ProductTableProp
                         </button>
                         <button
                           onClick={(e) => handleEditProduct(product, e)}
-                          className="p-1.5 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-full transition-colors"
+                          className="p-1.5 text-purple-600 hover:text-purple-900 hover:bg-blue-50 rounded-full transition-colors"
                           title="Edit product"
                         >
                           <FiEdit2 className="w-4 h-4" />
@@ -676,7 +676,7 @@ const ProductTable = ({ products: initialProducts, onRefresh }: ProductTableProp
                     setIsViewModalOpen(false)
                     handleEditProduct(viewProduct)
                   }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center"
                 >
                   <FiEdit2 className="mr-1.5" /> Edit Product
                 </button>
@@ -692,7 +692,6 @@ const ProductTable = ({ products: initialProducts, onRefresh }: ProductTableProp
         )}
       </AnimatePresence>
 
-      {/* Delete Confirmation Dialog */}
       <AnimatePresence>
         {isDeleteDialogOpen && (
           <motion.div

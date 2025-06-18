@@ -69,22 +69,31 @@ const EditProductForm: React.FC<EditProductFormProps> = ({ product, onClose, onS
     return Object.keys(errors).length === 0
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-    
+const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const { name, value } = e.target
   
-    if (formErrors[name]) {
-      setFormErrors(prev => ({ ...prev, [name]: "" }))
-    }
+  let processedValue: string | number = value
+  
+  if (name === 'main_price' || name === 'discount_price' || name === 'quantity') {
+    processedValue = value === '' ? '' : Number(value)
   }
+  
+  setFormData((prev) => ({ ...prev, [name]: processedValue }))
+  
+  if (formErrors[name]) {
+    setFormErrors(prev => ({ ...prev, [name]: "" }))
+  }
+}
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newFiles = Array.from(e.target.files)
-      setImageFiles((prev) => [...prev, ...newFiles])
-    }
+const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (e.target.files && e.target.files.length > 0) {
+    const newFiles = Array.from(e.target.files)
+    setImageFiles((prev) => {
+      const updated = [...prev, ...newFiles]
+      return updated
+    })
   }
+}
 
   const removeImage = (index: number) => {
     setImageFiles((prev) => prev.filter((_, i) => i !== index))
@@ -106,76 +115,122 @@ const handleSubmit = async (e: React.FormEvent) => {
   try {
     const accessToken = localStorage.getItem("accessToken")
     
-    const hasImageChanges = imageFiles.length > 0 || currentImages.length !== (product.image_urls?.length || 0)
+   
+    const { image, ...rawUpdateData } = formData
     
-    if (!hasImageChanges) {
-    
-      const { image, ...updateData } = formData
-      
-      const response = await apiClient.patch(`/products/${product.id}`, updateData, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      })
-      
-      console.log('Basic update successful:', response.data)
-      onSave()
-      return
-    }
-    
-    const submitData = new FormData()
-    
-    const { image, ...basicData } = formData
-    Object.entries(basicData).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        submitData.append(key, value.toString())
-      }
-    })
-    
-    if (currentImages.length > 0) {
-      currentImages.forEach((imageUrl) => {
-        submitData.append('keep_images[]', imageUrl)
-      })
-    }
- 
-    if (imageFiles.length > 0) {
-      imageFiles.forEach((file) => {
-        submitData.append('images[]', file)
-      })
-    }
 
-    // console.log('=== FormData Debug ===')
-    // console.log('Current images to keep:', currentImages)
-    // console.log('New files to upload:', imageFiles.length)
-    for (const [key, value] of submitData.entries()) {
-      if (value instanceof File) {
-        console.log(key, 'FILE:', value.name, value.type, value.size)
-      } else {
-        console.log(key, value)
-      }
+    const updateData = {
+      ...rawUpdateData,
+    
+      discount_price: rawUpdateData.discount_price && rawUpdateData.discount_price > 0 
+        ? rawUpdateData.discount_price 
+        : null,
+    
+      main_price: Number(rawUpdateData.main_price),
+      quantity: Number(rawUpdateData.quantity),
+   
+      category_id: rawUpdateData.category_id || null
     }
-
-    const response = await apiClient.patch(`/products/${product.id}`, submitData, {
+    
+    await apiClient.patch(`/products/${product.id}`, updateData, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
       },
     })
-
-    // console.log('Update with images successful:', response.data)
+    
+    const hasNewImages = imageFiles.length > 0
+    const hasRemovedImages = currentImages.length !== (product.image_urls?.length || 0)
+    
+    if (hasRemovedImages) {
+      const imagesToRemove = (product.image_urls || []).filter(
+        (url: string) => !currentImages.includes(url)
+      )
+      
+      if (imagesToRemove.length > 0) {
+        await apiClient.delete(`/products/${product.id}/images/remove`, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          data: {
+            image_urls: imagesToRemove
+          }
+        })
+      }
+    }
+    
+    if (hasNewImages) {
+      const formData = new FormData()
+      
+      imageFiles.forEach((file) => {
+        formData.append('images[]', file)
+      })
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://prod.zikor.shop/api'}/products/${product.id}/images/add`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to add images')
+      }
+      
+      const result = await response.json()
+    }
+    
     onSave()
+    
   } catch (error: any) {
-    console.error("Full error:", error)
-    console.error("Error response:", error.response?.data)
+    console.error("Update error:", error)
     
     if (error.response?.data?.error) {
       const errorMessages = Object.values(error.response.data.error).flat()
       alert(`Failed to update product: ${errorMessages.join(', ')}`)
     } else {
-      alert("Failed to update product. Please try again.")
+      alert(error.message || "Failed to update product. Please try again.")
     }
   } finally {
     setIsLoading(false)
+  }
+}
+
+
+const handleReplaceAllImages = async () => {
+  if (imageFiles.length === 0) return
+  
+  try {
+    const accessToken = localStorage.getItem("accessToken")
+    const formData = new FormData()
+    
+    imageFiles.forEach((file) => {
+      formData.append('images[]', file)
+    })
+    
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'https://prod.zikor.shop/api'}/products/${product.id}/images/replace`, {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: formData
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to replace images')
+    }
+    
+    const result = await response.json()
+     
+    setImageFiles([])
+    setCurrentImages(result.new_images)
+    
+  } catch (error) {
+    console.error('Replace images error:', error)
+    alert('Failed to replace images')
   }
 }
 
