@@ -12,6 +12,7 @@ export interface Product {
     image_urls?: string[]
     description?: string
     image?: string
+    created_at?: string;
   }
   
   export interface ProductTableProps {
