@@ -314,7 +314,7 @@ const StorefrontHeader = ({
                 </div>
               </div>
 
-              {/* Enhanced search bar and navigation for medium+ screens */}
+           
               <div className="hidden md:flex items-center space-x-5">
                 {/* Search input with animation */}
                 <motion.form 
@@ -463,7 +463,7 @@ const StorefrontHeader = ({
             </div>
             
             {/* Mobile search bar */}
-            <div className={`pb-3 md:hidden transition-all duration-300 ${isScrolled ? "h-12" : "h-0 overflow-hidden opacity-0"}`}>
+            {/* <div className={`pb-3 md:hidden transition-all duration-300 ${isScrolled ? "h-12" : "h-0 overflow-hidden opacity-0"}`}>
               <form onSubmit={handleSearch} className="relative">
                 <input
                   type="text"
@@ -477,7 +477,7 @@ const StorefrontHeader = ({
                   <Search size={16} />
                 </div>
               </form>
-            </div>
+            </div> */}
           </div>
         </div>
 

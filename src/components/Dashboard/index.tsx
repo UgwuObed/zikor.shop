@@ -320,8 +320,9 @@ const Dashboard = () => {
       icon: FiSettings, 
       path: '/settings',
       subItems: [
-        { name: 'Store Settings', path: '/settings/store' },
+        { name: 'Store Settings', path: '/settings/main' },
         { name: 'Payment Methods', path: '/settings/payments' },
+        { name: 'Bank Details', path: '/settings/bank' },
         { name: 'Shipping', path: '/settings/shipping' },
       ]
     },

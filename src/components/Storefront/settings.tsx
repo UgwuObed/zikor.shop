@@ -67,8 +67,6 @@ const SettingsStep: React.FC<SettingsStepProps> = ({
     });
   };
   
-
-
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { 
@@ -122,8 +120,6 @@ const SettingsStep: React.FC<SettingsStepProps> = ({
     />
   </motion.div>
 
-
-      {/* Shipping Fees Component */}
       <motion.div variants={itemVariants}>
         <ShippingFees
           shippingFees={formData.shipping_fees || []}

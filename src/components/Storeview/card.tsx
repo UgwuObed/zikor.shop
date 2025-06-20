@@ -45,7 +45,7 @@ const ProductCard = ({
   const [isAddedToCart, setIsAddedToCart] = useState(false)
   const [addingToCart, setAddingToCart] = useState(false)
 
-  // Calculate the discount percentage if available
+
   const discountPercentage =
     product.main_price && product.discount_price
       ? Math.round(((Number(product.main_price) - Number(product.discount_price)) / Number(product.main_price)) * 100)
@@ -69,7 +69,6 @@ const ProductCard = ({
     setCurrentImageIndex((prev) => (prev === 0 ? product.image_urls!.length - 1 : prev - 1))
   }
 
-  // Set up auto-rotate for images when hovering
   useEffect(() => {
     let timer: NodeJS.Timeout
     if (isHovered && hasMultipleImages) {
@@ -96,7 +95,7 @@ const ProductCard = ({
       setAddingToCart(false)
       setIsAddedToCart(true)
       
-      // Reset added status after delay
+   
       setTimeout(() => setIsAddedToCart(false), 1500)
     }, 600)
   }
@@ -111,7 +110,6 @@ const ProductCard = ({
     if (onQuickView) onQuickView(product.id)
   }
 
-  // Card animation variants
   const cardVariants = {
     normal: { y: 0 },
     hover: { 
@@ -124,7 +122,7 @@ const ProductCard = ({
     }
   }
   
-  // Action button variants
+
   const actionButtonVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: (custom: number) => ({ 
@@ -198,7 +196,6 @@ const ProductCard = ({
           </motion.div>
         </AnimatePresence>
 
-        {/* Image Navigation Arrows - conditionally showing on hover */}
         {hasMultipleImages && isHovered && (
           <>
             <motion.button
