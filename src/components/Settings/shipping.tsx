@@ -261,7 +261,6 @@ const ShippingFeesSettings = () => {
         businessName={businessName}
         title="Shipping Fees Settings"
         onBack={handleBack}
-        onLogout={handleLogout}
       />
 
       <main className="max-w-4xl mx-auto">

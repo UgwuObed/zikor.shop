@@ -243,7 +243,6 @@ const BusinessInfoSettings = () => {
         businessName={formData.business_name || 'Your Business'}
         title="Business Information Settings"
         onBack={handleBack}
-        onLogout={handleLogout}
       />
 
       <main className="max-w-4xl mx-auto">

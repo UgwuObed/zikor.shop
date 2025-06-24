@@ -314,7 +314,6 @@ const handleColorChange: HandleColorChange = (color) => {
         businessName={businessName}
         title="Visual Branding Settings"
         onBack={handleBack}
-        onLogout={handleLogout}
       />
 
       <main className="max-w-4xl mx-auto">

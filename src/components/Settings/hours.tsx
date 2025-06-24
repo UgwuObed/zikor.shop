@@ -318,7 +318,7 @@ const formatTime: FormatTimeFn = (time) => {
         businessName={businessName}
         title="Business Hours Settings"
         onBack={handleBack}
-        onLogout={handleLogout}
+        
       />
 
       <main className="max-w-4xl mx-auto">
