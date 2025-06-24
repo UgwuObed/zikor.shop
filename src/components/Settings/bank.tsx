@@ -1,241 +1,490 @@
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import { motion } from 'framer-motion';
-import { BiTrash } from 'react-icons/bi';
-import { CheckCircle, CreditCard, Clock } from 'lucide-react';
-import SettingsHeader from './header';
-import MessageAlert from './alert';
-// import apiClient from '../../apiClient';
+"use client"
 
-// Mock API client - replace with your actual apiClient import
-interface Storefront {
-    business_name: string;
-}
+import type React from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/router"
+import { motion } from "framer-motion"
+import { BiTrash, BiEdit } from "react-icons/bi"
+import { CheckCircle, CreditCard, Clock, AlertTriangle, Shield, Banknote } from "lucide-react"
+import apiClient from "../../apiClient"
+import BankFormModal from "./bankForm" 
+
 
 interface BankDetails {
-    bank_name: string;
-    account_number: string;
-    account_name: string;
-    is_verified: boolean;
-    has_complete_details: boolean;
-    last_updated: string;
+  bank_name: string
+  bank_code: string
+  account_number: string
+  account_name: string
+  is_verified: boolean
+  has_complete_details: boolean
+  last_updated: string
 }
 
-interface GetResponse {
-    data: {
-        success: boolean;
-        storefront?: Storefront;
-        bank_details?: BankDetails;
-    };
+interface MessageAlertProps {
+  type: "success" | "error" | "warning"
+  message: string
 }
 
-interface DeleteResponse {
-    data: {
-        success: boolean;
-    };
+
+interface Bank {
+  name: string
+  code: string
 }
 
-type Headers = {
-    headers: Record<string, string>;
-};
 
-const apiClient: {
-    get: (url: string, headers: Headers) => Promise<GetResponse>;
-    delete: (url: string, headers: Headers) => Promise<DeleteResponse>;
-} = {
-    get: (url, headers) => 
-        new Promise<GetResponse>(resolve => 
-            setTimeout(() => resolve({ 
-                data: { 
-                    success: true, 
-                    storefront: { business_name: 'TechStore Pro' },
-                    bank_details: {
-                        bank_name: 'First Bank of Nigeria',
-                        account_number: '1234567890',
-                        account_name: 'TECHSTORE PRO LIMITED',
-                        is_verified: true,
-                        has_complete_details: true,
-                        last_updated: '2024-01-15T10:30:00Z'
-                    }
-                }
-            }), 1000)
-        ),
-    delete: (url, headers) => 
-        new Promise<DeleteResponse>(resolve => 
-            setTimeout(() => resolve({ data: { success: true } }), 1000)
-        )
-};
+const MessageAlert: React.FC<MessageAlertProps> = ({ type, message }) => {
+  if (!message) return null
 
-// Animation variants
+  const alertClasses = {
+    success: "bg-green-50 border-green-200 text-green-800",
+    error: "bg-red-50 border-red-200 text-red-800",
+    warning: "bg-yellow-50 border-yellow-200 text-yellow-800",
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className={`border rounded-lg p-4 ${alertClasses[type]}`}
+    >
+      <div className="flex items-center">
+        {type === "success" && <CheckCircle className="w-5 h-5 mr-2" />}
+        {type === "error" && <AlertTriangle className="w-5 h-5 mr-2" />}
+        {type === "warning" && <AlertTriangle className="w-5 h-5 mr-2" />}
+        <p className="text-sm font-medium">{message}</p>
+      </div>
+    </motion.div>
+  )
+}
+
+const SettingsHeader: React.FC<{
+
+  onBack: () => void
+}> = ({  onBack }) => (
+  <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 md:p-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        <div className="flex items-center space-x-4">
+          <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </motion.div>
+)
+
+
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { staggerChildren: 0.1, delayChildren: 0.2 }
-  }
-};
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
+  },
+}
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,
     opacity: 1,
-    transition: { type: "spring", stiffness: 100, damping: 10 }
-  }
-};
+    transition: { type: "spring", stiffness: 100, damping: 10 },
+  },
+}
 
 const BankDetailsSettings = () => {
-  const router = useRouter();
-  const [businessName, setBusinessName] = useState('Your Business');
-  const [bankDetails, setBankDetails] = useState<BankDetails | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(true);
-  const [successMessage, setSuccessMessage] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
-  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const router = useRouter()
+  const [bankDetails, setBankDetails] = useState<BankDetails | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isFetching, setIsFetching] = useState(true)
+  const [successMessage, setSuccessMessage] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
+
+ 
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [formData, setFormData] = useState({
+    bank_name: "",
+    bank_code: "",
+    account_number: "",
+    account_name: "",
+  })
+  const [verifiedAccountName, setVerifiedAccountName] = useState("")
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [modalErrorMessage, setModalErrorMessage] = useState("")
+  const [modalSuccessMessage, setModalSuccessMessage] = useState("")
+  const [isAccountVerified, setIsAccountVerified] = useState(false)
+  const [modalStep, setModalStep] = useState(1)
+  const [drawerHeight, setDrawerHeight] = useState(60) 
+  const [banks, setBanks] = useState<Bank[]>([])
+  const [filteredBanks, setFilteredBanks] = useState<Bank[]>([])
+  const [bankSearchTerm, setBankSearchTerm] = useState("")
+  const [showBankDropdown, setShowBankDropdown] = useState(false) 
 
   useEffect(() => {
-    fetchBankDetails();
-  }, []);
+    fetchBankDetails()
+    fetchBanks()
+  }, [])
+
+  useEffect(() => {
+    const filtered = banks.filter((bank) => bank.name.toLowerCase().includes(bankSearchTerm.toLowerCase()))
+    setFilteredBanks(filtered.slice(0, 200))
+  }, [bankSearchTerm, banks])
 
   const fetchBankDetails = async () => {
-    const accessToken = localStorage.getItem('accessToken');
+    const accessToken = localStorage.getItem("accessToken")
     if (!accessToken) {
-      router.push('/auth/signin');
-      return;
+      router.push("/auth/signin")
+      return
     }
 
     try {
-      setIsFetching(true);
-      const response = await apiClient.get('/storefront', {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      });
+      setIsFetching(true)
+      setErrorMessage("")
+
+     
+      const response = await apiClient.get("/user/bank-details", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
 
       if (response.data.success) {
-        setBusinessName(response.data.storefront?.business_name || 'Your Business');
-        
-        if (response.data.bank_details && response.data.bank_details.has_complete_details) {
-          setBankDetails(response.data.bank_details);
+        const details = response.data.bank_details
+        if (details && details.has_complete_details) {
+          setBankDetails(details)
+        } else {
+          setBankDetails(null)
         }
+      } else {
+        setErrorMessage(response.data.message || "Failed to load bank details")
       }
-    } catch (error) {
-      console.error('Error fetching bank details:', error);
-      setErrorMessage('Failed to load bank details');
-      setTimeout(() => setErrorMessage(''), 3000);
+    } catch (error: any) {
+      console.error("Error fetching bank details:", error)
+      if (error?.response?.status === 401) {
+        localStorage.removeItem("accessToken")
+        router.push("/auth/signin")
+      } else {
+        setErrorMessage("Failed to load bank details. Please try again.")
+      }
     } finally {
-      setIsFetching(false);
+      setIsFetching(false)
     }
-  };
+  }
+
+  const fetchBanks = async () => {
+    const accessToken = localStorage.getItem("accessToken")
+    if (!accessToken) return
+
+    try {
+      const response = await apiClient.get("/banks", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+      setBanks(response.data.banks)
+      setFilteredBanks(response.data.banks.slice(0, 100))
+    } catch (error) {
+      console.error("Error fetching banks:", error)
+    }
+  }
+
+  const resetModalState = () => {
+    setFormData({
+      bank_name: "",
+      bank_code: "",
+      account_number: "",
+      account_name: "",
+    })
+    setVerifiedAccountName("")
+    setIsVerifying(false)
+    setIsSubmitting(false)
+    setModalErrorMessage("")
+    setModalSuccessMessage("")
+    setShowBankDropdown(false)
+    setBankSearchTerm("")
+    setIsAccountVerified(false)
+    setModalStep(1)
+    setDrawerHeight(60)
+  }
+
+  const openAddModal = () => {
+    resetModalState()
+    setShowAddModal(true)
+  }
+
+  const openEditModal = () => {
+    if (bankDetails) {
+      setFormData({
+        bank_name: bankDetails.bank_name,
+        bank_code: bankDetails.bank_code,
+        account_number: bankDetails.account_number,
+        account_name: bankDetails.account_name,
+      })
+      setBankSearchTerm(bankDetails.bank_name)
+      setVerifiedAccountName(bankDetails.account_name)
+      setIsAccountVerified(bankDetails.is_verified)
+      setModalStep(2)
+    }
+    setModalErrorMessage("")
+    setModalSuccessMessage("")
+    setShowEditModal(true)
+  }
+
+  const closeModals = () => {
+    setShowAddModal(false)
+    setShowEditModal(false)
+    resetModalState()
+  }
+
+  const handleBankSelect = (bank: Bank) => {
+    setFormData({
+      ...formData,
+      bank_name: bank.name,
+      bank_code: bank.code,
+    })
+    setBankSearchTerm(bank.name)
+    setShowBankDropdown(false)
+    setIsAccountVerified(false)
+    setVerifiedAccountName("")
+
+    setTimeout(() => {
+      const accountNumInput = document.getElementById("modal_account_number")
+      if (accountNumInput) {
+        accountNumInput.focus()
+      }
+    }, 100)
+  }
+
+  const handleAccountNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    if (/^\d{0,10}$/.test(value)) {
+      setFormData({
+        ...formData,
+        account_number: value,
+      })
+      setIsAccountVerified(false)
+      setVerifiedAccountName("")
+      setModalErrorMessage("")
+
+      if (value.length === 10 && formData.bank_code) {
+        verifyAccount()
+      }
+    }
+  }
+
+  const verifyAccount = async () => {
+    if (!formData.account_number || !formData.bank_code) {
+      setModalErrorMessage("Please select a bank and enter account number")
+      return
+    }
+
+    if (formData.account_number.length !== 10) {
+      setModalErrorMessage("Account number must be 10 digits")
+      return
+    }
+
+    const accessToken = localStorage.getItem("accessToken")
+    if (!accessToken) {
+      router.push("/auth/signin")
+      return
+    }
+
+    setIsVerifying(true)
+    setModalErrorMessage("")
+
+    try {
+      const response = await apiClient.post(
+        "/user/verify",
+        {
+          account_number: formData.account_number,
+          bank_code: formData.bank_code,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+      )
+
+      if (response.data.success) {
+        setVerifiedAccountName(response.data.account_name)
+        setFormData({
+          ...formData,
+          account_name: response.data.account_name,
+        })
+        setIsAccountVerified(true)
+        setModalSuccessMessage("Account verified successfully!")
+        setModalStep(2)
+
+        setTimeout(() => {
+          setModalSuccessMessage("")
+        }, 3000)
+      }
+    } catch (error: any) {
+      console.error("Error verifying account:", error)
+      if (error.response && error.response.data) {
+        setModalErrorMessage(error.response.data.message || "Account verification failed")
+      } else {
+        setModalErrorMessage("Account verification failed. Please try again.")
+      }
+    } finally {
+      setIsVerifying(false)
+    }
+  }
+
+  const handleModalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!isAccountVerified) {
+      setModalErrorMessage("Please verify your account details first")
+      return
+    }
+
+    const accessToken = localStorage.getItem("accessToken")
+    if (!accessToken) {
+      router.push("/auth/signin")
+      return
+    }
+
+    setIsSubmitting(true)
+    setModalErrorMessage("")
+
+    try {
+      const response = await apiClient.patch("/user/bank-details", formData, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
+
+      if (response.data.success) {
+        setModalSuccessMessage("Bank details saved successfully!")
+        await fetchBankDetails()
+        setTimeout(() => {
+          closeModals()
+          setSuccessMessage("Bank details updated successfully!")
+          setTimeout(() => setSuccessMessage(""), 5000)
+        }, 2000)
+      }
+    } catch (error: any) {
+      console.error("Error updating bank details:", error)
+      if (error.response && error.response.data) {
+        if (error.response.data.suggested_name) {
+          setModalErrorMessage(`${error.response.data.message}. Did you mean: ${error.response.data.suggested_name}?`)
+        } else {
+          setModalErrorMessage(error.response.data.message || "Failed to save bank details")
+        }
+      } else {
+        setModalErrorMessage("Failed to save bank details. Please try again.")
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    router.push('/auth/signin');
-  };
+    localStorage.removeItem("accessToken")
+    router.push("/auth/signin")
+  }
 
   const handleBack = () => {
-    router.back();
-  };
+    router.back()
+  }
 
   const handleEditBank = () => {
-    // Navigate to bank details form
-    router.push('/settings/bank-details-form');
-  };
+    openEditModal()
+  }
+
+  const handleAddBank = () => {
+    openAddModal()
+  }
 
   const handleDeleteBank = async () => {
-    const accessToken = localStorage.getItem('accessToken');
+    const accessToken = localStorage.getItem("accessToken")
     if (!accessToken) {
-      router.push('/auth/signin');
-      return;
+      router.push("/auth/signin")
+      return
     }
 
-    setIsLoading(true);
-    setErrorMessage('');
+    setIsLoading(true)
+    setErrorMessage("")
 
     try {
-      const response = await apiClient.delete('/user/bank-details', {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
-      });
+      const response = await apiClient.delete("/user/bank-details", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      })
 
       if (response.data.success) {
-        setBankDetails(null);
-        setSuccessMessage('Bank details removed successfully!');
-        setIsConfirmingDelete(false);
-        setTimeout(() => setSuccessMessage(''), 3000);
-      }
-    } catch (error) {
-      console.error('Error deleting bank details:', error);
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'response' in error &&
-        typeof (error as any).response === 'object' &&
-        (error as any).response !== null &&
-        'data' in (error as any).response &&
-        typeof (error as any).response.data === 'object' &&
-        (error as any).response.data !== null &&
-        'message' in (error as any).response.data
-      ) {
-        setErrorMessage((error as any).response.data.message);
+        setBankDetails(null)
+        setSuccessMessage("Bank details removed successfully!")
+        setIsConfirmingDelete(false)
+        setTimeout(() => setSuccessMessage(""), 5000)
       } else {
-        setErrorMessage('Failed to remove bank details');
+        setErrorMessage(response.data.message || "Failed to remove bank details")
+        setIsConfirmingDelete(false)
+        setTimeout(() => setErrorMessage(""), 5000)
       }
-      setIsConfirmingDelete(false);
-      setTimeout(() => setErrorMessage(''), 3000);
+    } catch (error: any) {
+      console.error("Error deleting bank details:", error)
+      const message = error?.response?.data?.message || "Failed to remove bank details. Please try again."
+      setErrorMessage(message)
+      setIsConfirmingDelete(false)
+      setTimeout(() => setErrorMessage(""), 5000)
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
-  };
+  }
 
-interface FormatAccountNumber {
-    (number: string): string;
-}
-
-const formatAccountNumber: FormatAccountNumber = (number) => {
-    if (!number) return '';
-    const parts: string[] = [];
+  const formatAccountNumber = (number: string): string => {
+    if (!number) return ""
+    const parts: string[] = []
     for (let i = 0; i < number.length; i += 3) {
-        parts.push(number.substring(i, i + 3));
+      parts.push(number.substring(i, i + 3))
     }
-    return parts.join(' ');
-};
+    return parts.join(" ")
+  }
 
-interface FormatLastUpdated {
-    (dateString: string): string;
-}
-
-const formatLastUpdated: FormatLastUpdated = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('en-US', { 
-        month: 'short', 
-        day: 'numeric', 
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    }).format(date);
-};
+  const formatLastUpdated = (dateString: string): string => {
+    if (!dateString) return ""
+    const date = new Date(dateString)
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date)
+  }
 
   if (isFetching) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-100 to-gray-50 py-4 px-4 md:py-8">
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 py-4 px-4 md:py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
             <div className="p-6 md:p-8">
               <div className="animate-pulse space-y-6">
                 <div className="text-center">
-                  <div className="bg-gray-200 rounded-full w-16 h-16 mx-auto mb-4"></div>
-                  <div className="h-6 bg-gray-200 rounded w-48 mx-auto mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-64 mx-auto"></div>
+                  <div className="bg-gray-200 rounded-full w-20 h-20 mx-auto mb-6"></div>
+                  <div className="h-8 bg-gray-200 rounded-lg w-48 mx-auto mb-3"></div>
+                  <div className="h-5 bg-gray-200 rounded-lg w-64 mx-auto"></div>
                 </div>
-                <div className="bg-gray-50 rounded-lg p-6">
-                  <div className="space-y-4">
-                    <div className="h-4 bg-gray-200 rounded w-32"></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="h-4 bg-gray-200 rounded"></div>
-                      <div className="h-4 bg-gray-200 rounded"></div>
-                      <div className="h-4 bg-gray-200 rounded md:col-span-2"></div>
-                    </div>
+                <div className="bg-gray-50 rounded-xl p-6 space-y-4">
+                  <div className="h-6 bg-gray-200 rounded-lg w-40"></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {[...Array(4)].map((_, i) => (
+                      <div key={i} className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-24"></div>
+                        <div className="h-5 bg-gray-200 rounded w-full"></div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -243,180 +492,264 @@ const formatLastUpdated: FormatLastUpdated = (dateString) => {
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-gray-50 py-4 px-4 md:py-8">
-      <SettingsHeader 
-        businessName={businessName}
-        title="Bank Details Settings"
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 py-4 px-4 md:py-8">
+      <SettingsHeader
+       
         onBack={handleBack}
-        onLogout={handleLogout}
+        
       />
 
       <main className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
           <div className="p-6 md:p-8">
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="space-y-6"
-            >
+            <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
               {/* Header */}
-              <motion.div variants={itemVariants} className="text-center pb-2">
-                <div className="bg-purple-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                  <CreditCard className="w-8 h-8 text-purple-700" />
-                </div>
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Bank Details</h2>
-                <p className="text-gray-600 max-w-md mx-auto">
-                  Manage your bank account details for receiving payments
-                </p>
+              <motion.div variants={itemVariants} className="text-center pb-4">
+                {/* <div className="bg-gradient-to-r from-purple-500 to-blue-600 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                  <CreditCard className="w-10 h-10 text-white" />
+                </div> */}
+                {/* <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-3">
+                  Bank Details
+                </h2> */}
+                
               </motion.div>
+
+              {/* Messages */}
+              <MessageAlert type="success" message={successMessage} />
+              <MessageAlert type="error" message={errorMessage} />
 
               {/* Current Bank Details */}
               {bankDetails ? (
-                <motion.div variants={itemVariants} className="bg-gray-50 border border-gray-100 rounded-lg p-6">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+                <motion.div
+                  variants={itemVariants}
+                  className="bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl p-6 md:p-8"
+                >
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between space-y-6 lg:space-y-0 lg:space-x-8">
                     <div className="flex-1">
-                      <div className="flex items-center mb-4">
-                        <h3 className="font-semibold text-gray-800 text-lg">Current Bank Account</h3>
-                        {bankDetails.is_verified && (
-                          <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full bg-green-100 text-xs font-medium text-green-800">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            Verified
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+                        <h3 className="font-bold text-gray-800 text-xl mb-2 sm:mb-0">Current Bank Account</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {bankDetails.is_verified ? (
+                            <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-green-100 text-sm font-semibold text-green-800 shadow-sm">
+                              <CheckCircle className="w-4 h-4 mr-1.5" />
+                              Verified
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-yellow-100 text-sm font-semibold text-yellow-800 shadow-sm">
+                              <Clock className="w-4 h-4 mr-1.5" />
+                              Pending
+                            </span>
+                          )}
+                          <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-blue-100 text-sm font-semibold text-blue-800 shadow-sm">
+                            <Shield className="w-4 h-4 mr-1.5" />
+                            Secure
                           </span>
-                        )}
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Bank Name</p>
-                          <p className="font-medium text-gray-800">{bankDetails.bank_name}</p>
                         </div>
-                        
-                        <div>
-                          <p className="text-sm text-gray-500 mb-1">Account Number</p>
-                          <p className="font-medium text-gray-800 font-mono">
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                          <p className="text-sm font-medium text-gray-500 mb-2 flex items-center">
+                            <Banknote className="w-4 h-4 mr-1.5" />
+                            Bank Name
+                          </p>
+                          <p className="font-semibold text-gray-900 text-lg">{bankDetails.bank_name}</p>
+                        </div>
+
+                        <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                          <p className="text-sm font-medium text-gray-500 mb-2 flex items-center">
+                            <CreditCard className="w-4 h-4 mr-1.5" />
+                            Account Number
+                          </p>
+                          <p className="font-semibold text-gray-900 text-lg font-mono tracking-wider">
                             {formatAccountNumber(bankDetails.account_number)}
                           </p>
                         </div>
-                        
-                        <div className="md:col-span-2">
-                          <p className="text-sm text-gray-500 mb-1">Account Name</p>
-                          <p className="font-medium text-gray-800">{bankDetails.account_name}</p>
+
+                        <div className="md:col-span-2 bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                          <p className="text-sm font-medium text-gray-500 mb-2">Account Name</p>
+                          <p className="font-semibold text-gray-900 text-lg">{bankDetails.account_name}</p>
                         </div>
                       </div>
-                      
-                      <p className="flex items-center text-xs text-gray-500 mt-4">
-                        <Clock className="w-3 h-3 mr-1" />
-                        Last updated: {formatLastUpdated(bankDetails.last_updated)}
-                      </p>
+
+                      <div className="mt-6 pt-4 border-t border-gray-200">
+                        <p className="flex items-center text-sm text-gray-500">
+                          <Clock className="w-4 h-4 mr-1.5" />
+                          Last updated: {formatLastUpdated(bankDetails.last_updated)}
+                        </p>
+                      </div>
                     </div>
-                    
-                    <div className="flex flex-col sm:flex-row lg:flex-col space-y-2 sm:space-y-0 sm:space-x-3 lg:space-x-0 lg:space-y-2">
+
+                    <div className="flex flex-col space-y-3 lg:w-48">
                       <button
                         onClick={handleEditBank}
-                        className="text-sm px-4 py-2 border border-purple-200 bg-white text-purple-700 rounded-lg hover:bg-purple-50 transition-colors duration-200 font-medium"
+                        className="flex items-center justify-center px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
                       >
-                        Change Bank Details
+                        <BiEdit className="w-4 h-4 mr-2" />
+                        Edit Details
                       </button>
                       <button
                         onClick={() => setIsConfirmingDelete(true)}
                         disabled={isLoading}
-                        className="text-sm px-4 py-2 border border-red-200 bg-white text-red-600 rounded-lg hover:bg-red-50 transition-colors duration-200 disabled:opacity-50 font-medium"
+                        className="flex items-center justify-center px-4 py-3 border-2 border-red-200 bg-white text-red-600 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all duration-200 disabled:opacity-50 font-semibold shadow-sm hover:shadow"
                       >
-                        <span className="flex items-center justify-center">
-                          {isLoading ? (
-                            <svg className="animate-spin w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        {isLoading ? (
+                          <>
+                            <svg className="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
                             </svg>
-                          ) : (
-                            <BiTrash className="w-4 h-4 mr-1" />
-                          )}
-                          <span>Remove</span>
-                        </span>
+                            Removing...
+                          </>
+                        ) : (
+                          <>
+                            <BiTrash className="w-4 h-4 mr-2" />
+                            Remove
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
                 </motion.div>
               ) : (
-                <motion.div variants={itemVariants} className="text-center py-12">
-                  <CreditCard className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                  <h3 className="text-lg font-medium text-gray-800 mb-2">No Bank Details Added</h3>
-                  <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                    Add your bank account details to start receiving payments from your customers
+                <motion.div
+                  variants={itemVariants}
+                  className="text-center py-16 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200"
+                >
+                  <div className="bg-gradient-to-r from-purple-100 to-blue-100 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <CreditCard className="w-12 h-12 text-purple-600" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-gray-800 mb-3">No Bank Details Added</h3>
+                  <p className="text-gray-600 mb-8 max-w-md mx-auto text-lg leading-relaxed">
+                    Add your bank account details to start receiving payments from your customers securely
                   </p>
                   <button
-                    onClick={handleEditBank}
-                    className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors duration-200 shadow-sm hover:shadow"
+                    onClick={handleAddBank}
+                    className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                   >
+                    <CreditCard className="w-5 h-5 mr-2" />
                     Add Bank Details
                   </button>
                 </motion.div>
               )}
 
-              {/* Information Box */}
-              <motion.div variants={itemVariants} className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-medium text-blue-800 mb-2">Important Information</h3>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li>• Bank details are required to receive payments from customers</li>
-                  <li>• All bank accounts are verified before payments can be processed</li>
-                  <li>• You can change your bank details at any time</li>
-                  <li>• Contact support if you have issues with bank verification</li>
-                </ul>
-              </motion.div>
 
               {/* Delete Confirmation Modal */}
               {isConfirmingDelete && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+                  className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50 backdrop-blur-sm"
                 >
                   <motion.div
                     initial={{ scale: 0.95, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    className="bg-white rounded-xl shadow-lg p-6 max-w-md w-full"
+                    className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border border-gray-200"
                   >
                     <div className="text-center">
-                      <div className="bg-red-100 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">
-                        <BiTrash className="w-6 h-6 text-red-600" />
+                      <div className="bg-red-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-6">
+                        <BiTrash className="w-8 h-8 text-red-600" />
                       </div>
-                      <h3 className="text-lg font-bold text-gray-800 mb-2">Delete Bank Details?</h3>
-                      <p className="text-gray-600 mb-6">
-                        Are you sure you want to remove your bank account details? This action cannot be undone and you won't be able to receive payments until you add new bank details.
+                      <h3 className="text-2xl font-bold text-gray-800 mb-3">Delete Bank Details?</h3>
+                      <p className="text-gray-600 mb-8 leading-relaxed">
+                        Are you sure you want to remove your bank account details? This action cannot be undone and you
+                        won't be able to receive payments until you add new bank details.
                       </p>
-                      <div className="flex flex-col sm:flex-row gap-3 sm:justify-center">
-                        <button 
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <button
                           onClick={() => setIsConfirmingDelete(false)}
-                          className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors font-medium"
+                          className="flex-1 px-6 py-3 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors font-semibold"
                         >
                           Cancel
                         </button>
-                        <button 
+                        <button
                           onClick={handleDeleteBank}
                           disabled={isLoading}
-                          className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:bg-red-400 font-medium"
+                          className="flex-1 px-6 py-3 text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors disabled:bg-red-400 font-semibold shadow-lg"
                         >
-                          {isLoading ? 'Deleting...' : 'Delete Bank Details'}
+                          {isLoading ? "Deleting..." : "Delete"}
                         </button>
                       </div>
                     </div>
                   </motion.div>
                 </motion.div>
               )}
-
-              <MessageAlert type="success" message={successMessage} />
-              <MessageAlert type="error" message={errorMessage} />
             </motion.div>
           </div>
         </div>
       </main>
-    </div>
-  );
-};
 
-export default BankDetailsSettings;
+      <BankFormModal
+        isOpen={showAddModal}
+        onClose={closeModals}
+        title="Add Bank Details"
+        formData={formData}
+        setFormData={setFormData}
+        banks={banks}
+        filteredBanks={filteredBanks}
+        bankSearchTerm={bankSearchTerm}
+        setBankSearchTerm={setBankSearchTerm}
+        handleBankSelect={handleBankSelect}
+        handleAccountNumberChange={handleAccountNumberChange}
+        verifyAccount={verifyAccount}
+        isVerifying={isVerifying}
+        verifiedAccountName={verifiedAccountName}
+        isAccountVerified={isAccountVerified}
+        modalErrorMessage={modalErrorMessage}
+        modalSuccessMessage={modalSuccessMessage}
+        modalStep={modalStep}
+        handleModalSubmit={handleModalSubmit}
+        isSubmitting={isSubmitting}
+        setShowBankDropdown={setShowBankDropdown}
+        showBankDropdown={showBankDropdown}
+        drawerHeight={drawerHeight}
+        setDrawerHeight={setDrawerHeight}
+      />
+
+   
+      <BankFormModal
+        isOpen={showEditModal}
+        onClose={closeModals}
+        title="Edit Bank Details"
+        formData={formData}
+        setFormData={setFormData}
+        banks={banks}
+        filteredBanks={filteredBanks}
+        bankSearchTerm={bankSearchTerm}
+        setBankSearchTerm={setBankSearchTerm}
+        handleBankSelect={handleBankSelect}
+        handleAccountNumberChange={handleAccountNumberChange}
+        verifyAccount={verifyAccount}
+        isVerifying={isVerifying}
+        verifiedAccountName={verifiedAccountName}
+        isAccountVerified={isAccountVerified}
+        modalErrorMessage={modalErrorMessage}
+        modalSuccessMessage={modalSuccessMessage}
+        modalStep={modalStep}
+        handleModalSubmit={handleModalSubmit}
+        isSubmitting={isSubmitting}
+        setShowBankDropdown={setShowBankDropdown}
+        showBankDropdown={showBankDropdown}
+        drawerHeight={drawerHeight}
+        setDrawerHeight={setDrawerHeight}
+      />
+    </div>
+  )
+}
+
+export default BankDetailsSettings
