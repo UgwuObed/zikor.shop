@@ -5,8 +5,7 @@ import { BiEdit, BiSave } from 'react-icons/bi';
 import { Building, Mail, Phone, MapPin } from 'lucide-react';
 import SettingsHeader from './header';
 import MessageAlert from './alert';
-// import apiClient from '../../apiClient';
-
+import apiClient from '../../apiClient';
 
 interface Storefront {
     business_name: string;
@@ -17,55 +16,6 @@ interface Storefront {
     address: string;
 }
 
-interface ApiResponse<T> {
-    data: {
-        success: boolean;
-        storefront?: T;
-        message?: string;
-    };
-}
-
-interface ApiClient {
-    patch: (
-        url: string,
-        data: Partial<Storefront>,
-        headers?: Record<string, any>
-    ) => Promise<ApiResponse<null>>;
-    get: (
-        url: string,
-        headers?: Record<string, any>
-    ) => Promise<ApiResponse<Storefront>>;
-}
-
-const apiClient: ApiClient = {
-    patch: (url, data, headers) =>
-        new Promise<ApiResponse<null>>(resolve =>
-            setTimeout(() => resolve({ data: { success: true } }), 1000)
-        ),
-    get: (url, headers) =>
-        new Promise<ApiResponse<Storefront>>(resolve =>
-            setTimeout(
-                () =>
-                    resolve({
-                        data: {
-                            success: true,
-                            storefront: {
-                                business_name: 'TechStore Pro',
-                                tagline: 'Your one-stop tech destination',
-                                description:
-                                    'We provide the latest technology products with excellent customer service and competitive prices.',
-                                email: 'contact@techstore.com',
-                                phone: '+234 801 234 5678',
-                                address: '123 Tech Street, Victoria Island, Lagos',
-                            },
-                        },
-                    }),
-                1000
-            )
-        ),
-};
-
-// Animation variants
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -113,7 +63,7 @@ const BusinessInfoSettings = () => {
 
     try {
       setIsFetching(true);
-      const response = await apiClient.get('/storefront', {
+      const response = await apiClient.get('/storefront/{slug}/profile', {
         headers: { 'Authorization': `Bearer ${accessToken}` }
       });
 
@@ -128,25 +78,20 @@ const BusinessInfoSettings = () => {
           address: storefront.address || ''
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching storefront data:', error);
-      setErrorMessage('Failed to load business information');
+      setErrorMessage(error?.response?.data?.message || 'Failed to load business information');
       setTimeout(() => setErrorMessage(''), 3000);
     } finally {
       setIsFetching(false);
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('accessToken');
-    router.push('/auth/signin');
-  };
-
   const handleBack = () => {
     router.back();
   };
 
-  const handleChange = (e: { target: { name: any; value: any; }; }) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -165,32 +110,52 @@ const BusinessInfoSettings = () => {
     setErrorMessage('');
 
     try {
-      const response = await apiClient.patch('/storefront', formData, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
+     
+      const updateData = {
+        business_name: formData.business_name,
+        tagline: formData.tagline,
+        description: formData.description,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address
+      };
+
+      const response = await apiClient.put('/storefront', updateData, {
+        headers: { 
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.data.success) {
-        setSuccessMessage('Business information updated successfully!');
+        setSuccessMessage(response.data.message || 'Business information updated successfully!');
         setIsEditing(false);
+        
+      
+        if (response.data.storefront) {
+          setFormData(prev => ({
+            ...prev,
+            business_name: response.data.storefront.business_name || prev.business_name
+          }));
+        }
+        
         setTimeout(() => setSuccessMessage(''), 3000);
-      }
-    } catch (error) {
-      console.error('Error updating business info:', error);
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'response' in error &&
-        typeof (error as any).response === 'object' &&
-        (error as any).response !== null &&
-        'data' in (error as any).response &&
-        typeof (error as any).response.data === 'object' &&
-        (error as any).response.data !== null &&
-        'message' in (error as any).response.data
-      ) {
-        setErrorMessage((error as any).response.data.message);
       } else {
-        setErrorMessage('Failed to update business information');
+        throw new Error(response.data.message || 'Failed to update business information');
       }
+    } catch (error: any) {
+      console.error('Error updating business info:', error);
+      if (error?.response?.status === 401) {
+        localStorage.removeItem('accessToken');
+        router.push('/auth/signin');
+        return;
+      }
+      
+      setErrorMessage(
+        error?.response?.data?.message || 
+        error?.message || 
+        'Failed to update business information'
+      );
       setTimeout(() => setErrorMessage(''), 3000);
     } finally {
       setIsLoading(false);
@@ -200,7 +165,6 @@ const BusinessInfoSettings = () => {
   const handleCancel = () => {
     setIsEditing(false);
     setErrorMessage('');
-    // Reset form data to original values
     fetchStorefrontData();
   };
 
@@ -289,6 +253,7 @@ const BusinessInfoSettings = () => {
                       onChange={handleChange}
                       className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                       placeholder="Enter your business name"
+                      required
                     />
                   ) : (
                     <div className="px-4 py-3 bg-gray-50 rounded-lg border">
