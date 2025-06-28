@@ -5,7 +5,7 @@ import { BiTrash, BiEdit } from 'react-icons/bi';
 import { CheckCircle, CreditCard, Clock, AlertTriangle, Shield, Banknote } from 'lucide-react';
 import apiClient from '../../apiClient';
 
-// Types
+
 interface BankDetails {
   bank_name: string;
   bank_code: string;

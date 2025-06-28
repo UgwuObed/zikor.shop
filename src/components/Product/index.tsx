@@ -564,13 +564,11 @@ const ProductsPage = () => {
                   <p className="text-xs lg:text-sm font-medium text-gray-600">Inventory Value</p>
                   <p className="text-xl lg:text-3xl font-bold text-gray-900 mt-1 lg:mt-2">{formatPrice(metrics.totalValue)}</p>
                   <div className="flex items-center mt-1 lg:mt-2">
-                    <DollarSign className="h-3 w-3 lg:h-4 lg:w-4 text-blue-500 mr-1" />
+                    
                     <span className="text-xs lg:text-sm text-blue-600 font-medium">Avg: {formatPrice(metrics.averagePrice)}</span>
                   </div>
                 </div>
-                <div className="p-2 lg:p-3 bg-blue-100 rounded-lg lg:rounded-xl">
-                  <DollarSign className="h-5 w-5 lg:h-8 lg:w-8 text-blue-600" />
-                </div>
+          
               </div>
             </div>
 

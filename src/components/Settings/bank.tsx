@@ -507,16 +507,7 @@ const BankDetailsSettings = () => {
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
           <div className="p-6 md:p-8">
             <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
-              {/* Header */}
-              <motion.div variants={itemVariants} className="text-center pb-4">
-                {/* <div className="bg-gradient-to-r from-purple-500 to-blue-600 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <CreditCard className="w-10 h-10 text-white" />
-                </div> */}
-                {/* <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-3">
-                  Bank Details
-                </h2> */}
-                
-              </motion.div>
+            
 
               {/* Messages */}
               <MessageAlert type="success" message={successMessage} />

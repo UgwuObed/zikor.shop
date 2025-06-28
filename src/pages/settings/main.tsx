@@ -116,17 +116,17 @@ export default function SettingsIndexPage() {
             {/* Increased padding */}
             <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
               {" "}
-              {/* Increased space */}
+            
               {/* Header */}
               <motion.div variants={itemVariants} className="text-center pb-6">
-                <div className="bg-gradient-to-r from-purple-500 to-blue-600 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-lg">
                   {" "}
-                  {/* Larger, gradient icon background */}
-                  <SettingsIcon className="w-10 h-10 text-white" /> {/* Larger icon */}
+                 
+                  <SettingsIcon className="w-10 h-10 text-white" /> 
                 </div>
                 <h2 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent mb-3">
                   {" "}
-                  {/* Stronger font, gradient text */}
+                 
                   Storefront Settings
                 </h2>
                 <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
@@ -153,7 +153,7 @@ export default function SettingsIndexPage() {
                       whileTap={{ y: 0, scale: 0.98 }}
                       variants={itemVariants} 
                     >
-                      {/* Subtle background pattern/gradient */}
+                     
                       <div className={`absolute inset-0 opacity-20 ${item.color} pointer-events-none`}></div>
 
                       <div className="relative z-10 flex items-start justify-between mb-4">
@@ -165,7 +165,7 @@ export default function SettingsIndexPage() {
                                 .replace("text-", "text-")} mr-4 shadow-md`}
                             >
                               {" "}
-                              {/* Larger, rounded icon background */}
+                             
                               <IconComponent className="w-6 h-6" /> 
                             </div>
                             <h3 className="font-bold text-lg text-gray-800 group-hover:text-purple-700 transition-colors">
@@ -196,7 +196,7 @@ export default function SettingsIndexPage() {
                     </p>
                   </div>
                 </div>
-                <button className="flex-shrink-0 text-base bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                <button className="flex-shrink-0 text-base bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors font-semibold shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
                   Contact Support
                 </button>
               </motion.div>

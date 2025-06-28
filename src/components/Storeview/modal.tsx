@@ -56,7 +56,7 @@ interface EnhancedProductModalProps {
   themeColor: string
 }
 
-const EnhancedProductModal: React.FC<EnhancedProductModalProps> = ({
+const ProductModal: React.FC<EnhancedProductModalProps> = ({
   isOpen,
   onClose,
   product,
@@ -1454,4 +1454,4 @@ if (typeof document !== "undefined" && !document.getElementById("enhanced-produc
   document.head.appendChild(styleElement)
 }
 
-export default EnhancedProductModal
+export default ProductModal

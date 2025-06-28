@@ -5,7 +5,7 @@ import { useRef, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { BiCheck, BiX } from "react-icons/bi"
 import { CreditCard, Banknote, ChevronDown, GripHorizontal } from "lucide-react"
-import { useMobile } from "@/hooks/use-mobile" // Assuming this hook is available
+import { useMobile } from "@/hooks/use-mobile"
 
 interface Bank {
   name: string
@@ -100,13 +100,13 @@ const BankFormModal: React.FC<BankFormModalProps> = ({
 
   const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: any) => {
     if (isMobile) {
-      const dragThreshold = 50 // pixels
+      const dragThreshold = 50 
       if (info.offset.y > dragThreshold) {
-        onClose() // Close if dragged down significantly
+        onClose() 
       } else if (info.offset.y < -dragThreshold) {
-        setDrawerHeight(90) // Extend to 90% if dragged up
+        setDrawerHeight(90) 
       } else {
-        setDrawerHeight(60) // Snap back to 60% if not dragged enough
+        setDrawerHeight(60)
       }
     }
   }

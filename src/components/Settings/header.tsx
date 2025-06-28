@@ -28,14 +28,7 @@ const SettingsHeader: React.FC<SettingsHeaderProps> = ({ businessName,  onBack, 
             <p className="text-sm text-gray-600 mt-1">{title}</p>
           )}
         </div>
-      </div>
-      {/* <button 
-        onClick={onLogout}
-        className="flex items-center gap-2 px-3 py-2 md:px-4 md:py-2 bg-white rounded-full shadow-sm hover:shadow text-gray-700 transition-all duration-200 text-sm md:text-base"
-      >
-        <BiLogOut className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />
-        <span className="hidden md:inline">Logout</span>
-      </button> */}
+      </div> 
     </div>
   </header>
 );
