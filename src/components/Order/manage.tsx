@@ -22,8 +22,21 @@ import {
   FiPhone,
   FiMail,
 } from "react-icons/fi"
-import { format, parseISO } from "date-fns"
-
+const getFirstProductImage = (productImage: string | null | undefined): string | null => {
+  if (!productImage) return null;
+  
+  try {
+    if (productImage.startsWith('[') && productImage.endsWith(']')) {
+      const images = JSON.parse(productImage);
+      return Array.isArray(images) && images.length > 0 ? images[0] : null;
+    }
+    
+    return productImage;
+  } catch (error) {
+    console.error('Error parsing product image:', error);
+    return productImage; 
+  }
+};
 
 const useMobileDetect = () => {
   const [isMobile, setIsMobile] = useState(false)
@@ -44,7 +57,6 @@ const useMobileDetect = () => {
   return isMobile
 }
 
-// Add skeleton loader component
 const OrderSkeletonLoader = () => {
   return (
     <div className="animate-pulse">
@@ -192,9 +204,16 @@ const OrderDetails = ({ order, onClose, onStatusChange }: OrderDetailsProps) => 
 
   const formatDate = ({ dateString }: FormatDateProps): string => {
     try {
-      return format(parseISO(dateString), "MMM dd, yyyy • HH:mm")
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
     } catch (error) {
-      return dateString
+      return dateString;
     }
   }
 
@@ -348,43 +367,51 @@ const OrderDetails = ({ order, onClose, onStatusChange }: OrderDetailsProps) => 
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                            {order.items.map((item) => (
-                              <tr key={item.id}>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="flex items-center">
-                                    {item.product_image ? (
-                                      <img
-                                        src={item.product_image || "/placeholder.svg"}
-                                        alt={item.product_name}
-                                        className="h-10 w-10 rounded object-cover"
-                                      />
-                                    ) : (
-                                      <div className="h-10 w-10 rounded bg-gray-200 flex items-center justify-center text-gray-500">
-                                        <FiShoppingBag />
+                            {order.items.map((item) => {
+                              const firstImage = getFirstProductImage(item.product_image);
+                              
+                              return (
+                                <tr key={item.id}>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                      {firstImage ? (
+                                        <img
+                                          src={firstImage}
+                                          alt={item.product_name}
+                                          className="h-10 w-10 rounded object-cover"
+                                          onError={(e) => {
+                                            console.error('Image failed to load:', firstImage);
+                                            e.currentTarget.style.display = 'none';
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="h-10 w-10 rounded bg-gray-200 flex items-center justify-center text-gray-500">
+                                          <FiShoppingBag />
+                                        </div>
+                                      )}
+                                      <div className="ml-4">
+                                        <div className="text-sm font-medium text-gray-900">{item.product_name}</div>
+                                        <div className="text-xs text-gray-500">ID: {item.product_id}</div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="text-sm text-gray-900">
+                                      {formatCurrency({ amount: item.discount_price || item.price })}
+                                    </div>
+                                    {item.discount_price && (
+                                      <div className="text-xs text-gray-500 line-through">
+                                        {formatCurrency({ amount: item.price })}
                                       </div>
                                     )}
-                                    <div className="ml-4">
-                                      <div className="text-sm font-medium text-gray-900">{item.product_name}</div>
-                                      <div className="text-xs text-gray-500">ID: {item.product_id}</div>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  <div className="text-sm text-gray-900">
-                                    {formatCurrency({ amount: item.discount_price || item.price })}
-                                  </div>
-                                  {item.discount_price && (
-                                    <div className="text-xs text-gray-500 line-through">
-                                      {formatCurrency({ amount: item.price })}
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.quantity}</td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                  {formatCurrency({ amount: item.total })}
-                                </td>
-                              </tr>
-                            ))}
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.quantity}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {formatCurrency({ amount: item.total })}
+                                  </td>
+                                </tr>
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>
@@ -433,7 +460,7 @@ const OrderDetails = ({ order, onClose, onStatusChange }: OrderDetailsProps) => 
                 )}
               </div>
 
-              {/* Right column: Customer information */}
+              {/* Right column */}
               <div className="space-y-6">
                 {/* Customer details */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -533,9 +560,14 @@ const OrdersManagement = () => {
 
   const formatDate = (dateString: string): string => {
     try {
-      return format(parseISO(dateString), "MMM dd, yyyy")
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
     } catch (error) {
-      return dateString
+      return dateString;
     }
   }
 
