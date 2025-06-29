@@ -76,7 +76,7 @@ const itemVariants = {
 
 export default function SettingsIndexPage() {
   const router = useRouter()
-  const [businessName, setBusinessName] = useState("Your Business")
+  const [businessName, setBusinessName] = useState("")
 
   useEffect(() => {
     const fetchBusinessName = async () => {
@@ -101,7 +101,7 @@ export default function SettingsIndexPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 py-4 px-4 md:py-8">
       <SettingsHeader
         businessName={businessName}
-        title="Settings & Configuration"
+        title="Settings"
         onBack={handleBack}
       />
 
