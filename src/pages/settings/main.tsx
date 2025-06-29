@@ -80,9 +80,9 @@ export default function SettingsIndexPage() {
 
   useEffect(() => {
     const fetchBusinessName = async () => {
-      // Simulate fetching business name
-      await new Promise((resolve) => setTimeout(resolve, 500)) // Simulate API call
-      setBusinessName("Zikor Shop") // Hardcode for example
+   
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      // setBusinessName("Zikor Shop") // Hardcode for example
     }
 
     fetchBusinessName()

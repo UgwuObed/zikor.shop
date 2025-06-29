@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { BiEdit, BiSave } from 'react-icons/bi';
 import { Building, Mail, Phone, MapPin } from 'lucide-react';
 import SettingsHeader from './header';
@@ -14,6 +14,10 @@ interface Storefront {
     email: string;
     phone: string;
     address: string;
+    slug?: string;
+    color_theme?: string;
+    logo?: string;
+    banner?: string;
 }
 
 const containerVariants = {
@@ -41,51 +45,78 @@ const BusinessInfoSettings = () => {
   const [isFetching, setIsFetching] = useState(true);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [formData, setFormData] = useState({
+  const [storefrontSlug, setStorefrontSlug] = useState('');
+  const [formData, setFormData] = useState<Storefront>({
     business_name: '',
     tagline: '',
     description: '',
     email: '',
     phone: '',
-    address: ''
+    address: '',
+    color_theme: '#7C3AED',
+    logo: '',
+    banner: ''
   });
 
   useEffect(() => {
-    fetchStorefrontData();
+    const controller = new AbortController();
+    fetchStorefrontData(controller.signal);
+
+    return () => controller.abort();
   }, []);
 
-  const fetchStorefrontData = async () => {
-    const accessToken = localStorage.getItem('accessToken');
-    if (!accessToken) {
-      router.push('/auth/signin');
-      return;
-    }
+ const fetchStorefrontData = async (signal?: AbortSignal) => {
+  const accessToken = localStorage.getItem('accessToken');
+  if (!accessToken) {
+    router.push('/auth/signin');
+    return;
+  }
 
-    try {
-      setIsFetching(true);
-      const response = await apiClient.get('/storefront/{slug}/profile', {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
+  try {
+    setIsFetching(true);
+    setErrorMessage('');
+    
+    const storefrontResponse = await apiClient.get('/storefront', {
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+      signal
+    });
+
+   
+    if (storefrontResponse.data.has_storefront && storefrontResponse.data.storefront) {
+      const slug = storefrontResponse.data.storefront.slug;
+      setStorefrontSlug(slug);
+      
+      const profileResponse = await apiClient.get(`/storefront/${slug}/profile`, {
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+        signal
       });
 
-      if (response.data.success && response.data.storefront) {
-        const { storefront } = response.data;
+      if (profileResponse.data.success && profileResponse.data.storefront) {
+        const { storefront } = profileResponse.data;
         setFormData({
           business_name: storefront.business_name || '',
           tagline: storefront.tagline || '',
           description: storefront.description || '',
           email: storefront.email || '',
           phone: storefront.phone || '',
-          address: storefront.address || ''
+          address: storefront.address || '',
+          color_theme: storefront.color_theme || '#7C3AED',
+          logo: storefront.logo || '',
+          banner: storefront.banner || ''
         });
       }
-    } catch (error: any) {
+    }
+
+  } catch (error: any) {
+    if (error.name !== 'AbortError') {
       console.error('Error fetching storefront data:', error);
       setErrorMessage(error?.response?.data?.message || 'Failed to load business information');
       setTimeout(() => setErrorMessage(''), 3000);
-    } finally {
-      setIsFetching(false);
     }
-  };
+  } finally {
+    setIsFetching(false);
+  }
+};
 
   const handleBack = () => {
     router.back();
@@ -110,14 +141,14 @@ const BusinessInfoSettings = () => {
     setErrorMessage('');
 
     try {
-     
       const updateData = {
         business_name: formData.business_name,
         tagline: formData.tagline,
         description: formData.description,
         email: formData.email,
         phone: formData.phone,
-        address: formData.address
+        address: formData.address,
+        color_theme: formData.color_theme
       };
 
       const response = await apiClient.put('/storefront', updateData, {
@@ -131,11 +162,17 @@ const BusinessInfoSettings = () => {
         setSuccessMessage(response.data.message || 'Business information updated successfully!');
         setIsEditing(false);
         
-      
+     
         if (response.data.storefront) {
           setFormData(prev => ({
             ...prev,
-            business_name: response.data.storefront.business_name || prev.business_name
+            business_name: response.data.storefront.business_name || prev.business_name,
+            tagline: response.data.storefront.tagline || prev.tagline,
+            description: response.data.storefront.description || prev.description,
+            email: response.data.storefront.email || prev.email,
+            phone: response.data.storefront.phone || prev.phone,
+            address: response.data.storefront.address || prev.address,
+            color_theme: response.data.storefront.color_theme || prev.color_theme
           }));
         }
         
@@ -218,6 +255,12 @@ const BusinessInfoSettings = () => {
               animate="visible"
               className="space-y-6"
             >
+              {/* Messages */}
+              <AnimatePresence>
+                {successMessage && <MessageAlert type="success" message={successMessage} />}
+                {errorMessage && <MessageAlert type="error" message={errorMessage} />}
+              </AnimatePresence>
+
               {/* Header */}
               <motion.div variants={itemVariants} className="flex justify-between items-start">
                 <div className="flex items-center">
@@ -402,9 +445,6 @@ const BusinessInfoSettings = () => {
                     </button>
                   </motion.div>
                 )}
-
-                <MessageAlert type="success" message={successMessage} />
-                <MessageAlert type="error" message={errorMessage} />
               </motion.div>
             </motion.div>
           </div>
