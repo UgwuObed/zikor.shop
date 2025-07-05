@@ -177,7 +177,7 @@ const Signin = () => {
 
             <div className="flex justify-end">
               <a 
-                href="/forgot-password" 
+                href="/auth/forget" 
                 className="text-sm text-purple-600 hover:text-purple-700 hover:underline"
               >
                 Forgot password?

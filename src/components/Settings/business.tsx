@@ -47,6 +47,7 @@ const BusinessInfoSettings = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [storefrontSlug, setStorefrontSlug] = useState('');
   const [formData, setFormData] = useState<Storefront>({
+    slug: '',
     business_name: '',
     tagline: '',
     description: '',
@@ -94,6 +95,7 @@ const BusinessInfoSettings = () => {
       if (profileResponse.data.success && profileResponse.data.storefront) {
         const { storefront } = profileResponse.data;
         setFormData({
+          slug: storefront.slug || '',
           business_name: storefront.business_name || '',
           tagline: storefront.tagline || '',
           description: storefront.description || '',
@@ -142,6 +144,7 @@ const BusinessInfoSettings = () => {
 
     try {
       const updateData = {
+        slug: formData.slug,
         business_name: formData.business_name,
         tagline: formData.tagline,
         description: formData.description,
@@ -166,6 +169,7 @@ const BusinessInfoSettings = () => {
         if (response.data.storefront) {
           setFormData(prev => ({
             ...prev,
+            slug: response.data.storefront.slug || prev.slug,
             business_name: response.data.storefront.business_name || prev.business_name,
             tagline: response.data.storefront.tagline || prev.tagline,
             description: response.data.storefront.description || prev.description,
@@ -283,6 +287,29 @@ const BusinessInfoSettings = () => {
 
               {/* Form */}
               <motion.div variants={itemVariants} className="space-y-6">
+
+            {/* Slug */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Storefront Slug
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="text"
+                      name="slug"
+                      value={formData.slug}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                      placeholder="Enter your storefront slug"
+                      required
+                    />
+                  ) : (
+                    <div className="px-4 py-3 bg-gray-50 rounded-lg border">
+                      <p className="font-medium">{formData.slug || 'No slug name set'}</p>
+                    </div>
+                  )}
+                </div>
+
                 {/* Business Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
