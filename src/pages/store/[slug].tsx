@@ -43,6 +43,8 @@ interface Product {
   category_id: number
   image: string
   image_urls: string[]
+  colors: string[] 
+  sizes: string[]
   category: {
     id: number
     name: string

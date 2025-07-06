@@ -12,6 +12,8 @@ export interface Product {
     image_urls?: string[]
     description?: string
     image?: string
+    colors?: string[]
+    sizes?: string[]
     created_at?: string;
   }
   

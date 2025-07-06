@@ -21,7 +21,7 @@ interface MessageAlertProps {
   message: string;
 }
 
-// Components
+
 const MessageAlert: React.FC<MessageAlertProps> = ({ type, message }) => {
   if (!message) return null;
 
@@ -86,7 +86,7 @@ const SettingsHeader: React.FC<{
   </motion.div>
 );
 
-// Animation variants
+
 const containerVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -107,7 +107,7 @@ const itemVariants = {
 
 const BankDetailsSettings = () => {
   const router = useRouter();
-  const [businessName, setBusinessName] = useState('Your Business');
+  const [businessName, setBusinessName] = useState('');
   const [bankDetails, setBankDetails] = useState<BankDetails | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
@@ -130,7 +130,7 @@ const BankDetailsSettings = () => {
       setIsFetching(true);
       setErrorMessage('');
       
-      // Fetch bank details from real API
+      
       const response = await apiClient.get('/user/bank-details', {
         headers: {
           'Authorization': `Bearer ${accessToken}`
@@ -170,7 +170,7 @@ const BankDetailsSettings = () => {
   };
 
   const handleEditBank = () => {
-    router.push('/settings/bank-details-form');
+    router.push('/settings/bank');
   };
 
   const handleDeleteBank = async () => {

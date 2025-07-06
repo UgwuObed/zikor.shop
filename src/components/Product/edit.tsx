@@ -1,7 +1,17 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { FiX, FiUpload, FiDollarSign, FiPackage, FiTag, FiAlignLeft, FiImage } from "react-icons/fi"
+import { 
+  FiX, 
+  FiUpload, 
+  FiDollarSign, 
+  FiPackage, 
+  FiTag, 
+  FiAlignLeft, 
+  FiImage,
+  FiPlus
+} from "react-icons/fi"
+import { BiPalette, BiRuler } from "react-icons/bi"
 import apiClient from "../../apiClient"
 import type { Product } from "./types"
 
@@ -20,6 +30,8 @@ const EditProductForm: React.FC<EditProductFormProps> = ({ product, onClose, onS
     quantity: product.quantity || 0,
     category_id: product.category?.id || "",
     image: product.image || "",
+    colors: product.colors || [],
+    sizes: product.sizes || [],
   })
   const [isLoading, setIsLoading] = useState(false)
   const [categories, setCategories] = useState<{id: string | number, name: string}[]>([])
@@ -27,6 +39,14 @@ const EditProductForm: React.FC<EditProductFormProps> = ({ product, onClose, onS
   const [currentImages, setCurrentImages] = useState<string[]>(product.image_urls || [])
   const [activeTab, setActiveTab] = useState('basic')
   const [formErrors, setFormErrors] = useState<Record<string, string>>({})
+  
+  // Color and size management state
+  const [newColor, setNewColor] = useState('')
+  const [newSize, setNewSize] = useState('')
+
+  // Predefined options
+  const predefinedColors = ['Red', 'Blue', 'Green', 'Yellow', 'Black', 'White', 'Pink', 'Purple', 'Orange', 'Brown']
+  const predefinedSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL']
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -45,6 +65,60 @@ const EditProductForm: React.FC<EditProductFormProps> = ({ product, onClose, onS
 
     fetchCategories()
   }, [])
+
+  // Color management functions
+  const addColor = () => {
+    if (newColor.trim() && !formData.colors.includes(newColor.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        colors: [...prev.colors, newColor.trim()]
+      }))
+      setNewColor('')
+    }
+  }
+
+  const removeColor = (colorToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      colors: prev.colors.filter(color => color !== colorToRemove)
+    }))
+  }
+
+  const addPredefinedColor = (color: string) => {
+    if (!formData.colors.includes(color)) {
+      setFormData(prev => ({
+        ...prev,
+        colors: [...prev.colors, color]
+      }))
+    }
+  }
+
+  // Size management functions
+  const addSize = () => {
+    if (newSize.trim() && !formData.sizes.includes(newSize.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        sizes: [...prev.sizes, newSize.trim()]
+      }))
+      setNewSize('')
+    }
+  }
+
+  const removeSize = (sizeToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      sizes: prev.sizes.filter(size => size !== sizeToRemove)
+    }))
+  }
+
+  const addPredefinedSize = (size: string) => {
+    if (!formData.sizes.includes(size)) {
+      setFormData(prev => ({
+        ...prev,
+        sizes: [...prev.sizes, size]
+      }))
+    }
+  }
 
   const validateForm = () => {
     const errors: Record<string, string> = {}
@@ -115,21 +189,19 @@ const handleSubmit = async (e: React.FormEvent) => {
   try {
     const accessToken = localStorage.getItem("accessToken")
     
-   
     const { image, ...rawUpdateData } = formData
     
-
     const updateData = {
       ...rawUpdateData,
-    
       discount_price: rawUpdateData.discount_price && rawUpdateData.discount_price > 0 
         ? rawUpdateData.discount_price 
         : null,
-    
       main_price: Number(rawUpdateData.main_price),
       quantity: Number(rawUpdateData.quantity),
-   
-      category_id: rawUpdateData.category_id || null
+      category_id: rawUpdateData.category_id || null,
+      // Add colors and sizes to the update data
+      colors: rawUpdateData.colors.length > 0 ? rawUpdateData.colors : null,
+      sizes: rawUpdateData.sizes.length > 0 ? rawUpdateData.sizes : null,
     }
     
     await apiClient.patch(`/products/${product.id}`, updateData, {
@@ -198,7 +270,6 @@ const handleSubmit = async (e: React.FormEvent) => {
     setIsLoading(false)
   }
 }
-
 
 const handleReplaceAllImages = async () => {
   if (imageFiles.length === 0) return
@@ -390,6 +461,158 @@ const handleReplaceAllImages = async () => {
             </div>
           </div>
         );
+
+      case 'variations':
+        return (
+          <div className="space-y-8">
+            {/* Colors Section */}
+            <div className="space-y-4">
+              <div className="flex items-center">
+                <BiPalette className="w-5 h-5 text-purple-600 mr-2" />
+                <h4 className="font-medium text-gray-700">Available Colors</h4>
+              </div>
+              
+              {/* Current colors */}
+              {formData.colors.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.colors.map((color, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-700"
+                    >
+                      {color}
+                      <button
+                        type="button"
+                        onClick={() => removeColor(color)}
+                        className="ml-2 hover:text-purple-900"
+                      >
+                        <FiX className="w-4 h-4" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              
+              {/* Add custom color */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newColor}
+                  onChange={(e) => setNewColor(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addColor())}
+                  className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Add custom color"
+                />
+                <button
+                  type="button"
+                  onClick={addColor}
+                  className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <FiPlus className="w-4 h-4" />
+                </button>
+              </div>
+              
+              {/* Quick add common colors */}
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500">Quick add:</p>
+                <div className="flex flex-wrap gap-1">
+                  {predefinedColors.map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => addPredefinedColor(color)}
+                      disabled={formData.colors.includes(color)}
+                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                        formData.colors.includes(color)
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-gray-100 hover:bg-purple-100 text-gray-700 hover:text-purple-700'
+                      }`}
+                    >
+                      {color}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Sizes Section */}
+            <div className="space-y-4">
+              <div className="flex items-center">
+                <BiRuler className="w-5 h-5 text-purple-600 mr-2" />
+                <h4 className="font-medium text-gray-700">Available Sizes</h4>
+              </div>
+              
+              {/* Current sizes */}
+              {formData.sizes.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {formData.sizes.map((size, index) => (
+                    <span
+                      key={index}
+                      className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 text-purple-700"
+                    >
+                      {size}
+                      <button
+                        type="button"
+                        onClick={() => removeSize(size)}
+                        className="ml-2 hover:text-purple-900"
+                      >
+                        <FiX className="w-4 h-4" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+              
+              {/* Add custom size */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newSize}
+                  onChange={(e) => setNewSize(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSize())}
+                  className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  placeholder="Add custom size"
+                />
+                <button
+                  type="button"
+                  onClick={addSize}
+                  className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <FiPlus className="w-4 h-4" />
+                </button>
+              </div>
+              
+              {/* Quick add common sizes */}
+              <div className="space-y-2">
+                <p className="text-xs text-gray-500">Quick add:</p>
+                <div className="flex flex-wrap gap-1">
+                  {predefinedSizes.map(size => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => addPredefinedSize(size)}
+                      disabled={formData.sizes.includes(size)}
+                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                        formData.sizes.includes(size)
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                          : 'bg-gray-100 hover:bg-purple-100 text-gray-700 hover:text-purple-700'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Variations Note */}
+            {/* <div className="p-4 bg-gradient-to-r from-purple-50 to-purple-50 border-l-4 border-purple-600 rounded-lg">
+              <p className="text-sm text-gray-600">
+                ✨ Adding colors and sizes helps customers find exactly what they're looking for and can increase sales!
+              </p>
+            </div> */}
+          </div>
+        );
       
       case 'images':
         return (
@@ -478,7 +701,7 @@ const handleReplaceAllImages = async () => {
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-2 md:p-6 max-w-4xl mx-auto">
-      <form onSubmit={handleSubmit}>
+      <div onSubmit={handleSubmit}>
         {/* Tab Navigation */}
         <div className="mb-6 border-b flex overflow-x-auto scrollbar-hide">
           <button
@@ -505,6 +728,17 @@ const handleReplaceAllImages = async () => {
           </button>
           <button
             type="button"
+            onClick={() => setActiveTab('variations')}
+            className={`px-4 py-3 whitespace-nowrap font-medium text-sm mr-4 border-b-2 transition-colors ${
+              activeTab === 'variations' 
+                ? 'border-purple-600 text-purple-600' 
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Variations
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveTab('images')}
             className={`px-4 py-3 whitespace-nowrap font-medium text-sm mr-4 border-b-2 transition-colors ${
               activeTab === 'images' 
@@ -521,7 +755,7 @@ const handleReplaceAllImages = async () => {
           {renderTabContent()}
         </div>
 
-        {/* Form Actions */}
+        {/* React Actions */}
         <div className="mt-8 flex justify-end gap-3">
           <button
             type="button"
@@ -532,6 +766,7 @@ const handleReplaceAllImages = async () => {
           </button>
           <button
             type="submit"
+            onClick={handleSubmit}
             className="px-5 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 flex items-center disabled:opacity-70"
             disabled={isLoading}
           >
@@ -564,7 +799,7 @@ const handleReplaceAllImages = async () => {
             )}
           </button>
         </div>
-      </form>
+      </div>
     </div>
   )
 }
