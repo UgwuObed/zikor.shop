@@ -13,7 +13,9 @@ import {
   Check,
   Truck,
   RefreshCcw,
-  Shield
+  Shield,
+  Palette,
+  Ruler
 } from "lucide-react"
 
 interface ProductDetailViewProps {
@@ -29,9 +31,11 @@ interface ProductDetailViewProps {
       name: string
     }
     image_urls: string[]
+    colors?: string[]
+    sizes?: string[]
     features?: string[]
   }
-  onAddToCart: (productId: number, quantity: number) => void
+  onAddToCart: (productId: number, quantity: number, selectedColor?: string, selectedSize?: string) => void
   themeColor: string
 }
 
@@ -42,12 +46,24 @@ const ProductDetailView = ({
 }: ProductDetailViewProps) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
+  const [selectedColor, setSelectedColor] = useState<string>("")
+  const [selectedSize, setSelectedSize] = useState<string>("")
   const [isAddingToCart, setIsAddingToCart] = useState(false)
   const [showZoom, setShowZoom] = useState(false)
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 })
+  const [selectionError, setSelectionError] = useState<string>("")
   const placeholderImage = "/api/placeholder/400/400"
   
- 
+  
+  useEffect(() => {
+    if (product.colors && product.colors.length === 1) {
+      setSelectedColor(product.colors[0])
+    }
+    if (product.sizes && product.sizes.length === 1) {
+      setSelectedSize(product.sizes[0])
+    }
+  }, [product.colors, product.sizes])
+  
   const discountPercentage = product.discount_price && Number(product.main_price) > Number(product.discount_price)
     ? Math.round((1 - Number(product.discount_price) / Number(product.main_price)) * 100)
     : 0
@@ -58,9 +74,43 @@ const ProductDetailView = ({
     }
   }
 
+  const handleColorSelect = (color: string) => {
+    setSelectedColor(color)
+    setSelectionError("")
+  }
+
+  const handleSizeSelect = (size: string) => {
+    setSelectedSize(size)
+    setSelectionError("")
+  }
+
+  const validateSelections = () => {
+    const errors = []
+    
+    if (product.colors && product.colors.length > 0 && !selectedColor) {
+      errors.push("Please select a color")
+    }
+    
+    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
+      errors.push("Please select a size")
+    }
+    
+    if (errors.length > 0) {
+      setSelectionError(errors.join(" and "))
+      return false
+    }
+    
+    setSelectionError("")
+    return true
+  }
+
   const handleAddToCart = () => {
+    if (!validateSelections()) {
+      return
+    }
+    
     setIsAddingToCart(true)
-    onAddToCart(product.id, quantity)
+    onAddToCart(product.id, quantity, selectedColor || undefined, selectedSize || undefined)
     
     setTimeout(() => {
       setIsAddingToCart(false)
@@ -73,14 +123,14 @@ const ProductDetailView = ({
     const container = e.currentTarget
     const rect = container.getBoundingClientRect()
     
-    // Calculate position as percentage
+
     const x = ((e.clientX - rect.left) / rect.width) * 100
     const y = ((e.clientY - rect.top) / rect.height) * 100
     
     setZoomPosition({ x, y })
   }
 
-  // Sample features if not provided
+ 
   const features = product.features || [
     "Free shipping for orders over ₦10,000",
     "30-day money-back guarantee",
@@ -301,6 +351,82 @@ const ProductDetailView = ({
               </p>
             </div>
 
+            {/* Color Selection */}
+            {product.colors && product.colors.length > 0 && (
+              <div className="mt-6">
+                <div className="flex items-center mb-3">
+                  <Palette size={18} className="mr-2 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Color
+                    {selectedColor && (
+                      <span className="ml-2 text-sm font-normal text-gray-600">
+                        - {selectedColor}
+                      </span>
+                    )}
+                  </h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {product.colors.map((color) => (
+                    <motion.button
+                      key={color}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleColorSelect(color)}
+                      className={`px-4 py-2 rounded-lg border-2 transition-all duration-200 ${
+                        selectedColor === color
+                          ? 'border-opacity-100 shadow-md text-white'
+                          : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                      }`}
+                      style={{
+                        backgroundColor: selectedColor === color ? themeColor : 'white',
+                        borderColor: selectedColor === color ? themeColor : undefined
+                      }}
+                    >
+                      {color}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Size Selection */}
+            {product.sizes && product.sizes.length > 0 && (
+              <div className="mt-6">
+                <div className="flex items-center mb-3">
+                  <Ruler size={18} className="mr-2 text-gray-600" />
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Size
+                    {selectedSize && (
+                      <span className="ml-2 text-sm font-normal text-gray-600">
+                        - {selectedSize}
+                      </span>
+                    )}
+                  </h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {product.sizes.map((size) => (
+                    <motion.button
+                      key={size}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleSizeSelect(size)}
+                      className={`px-4 py-2 rounded-lg border-2 transition-all duration-200 min-w-[3rem] ${
+                        selectedSize === size
+                          ? 'border-opacity-100 shadow-md text-white'
+                          : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                      }`}
+                      style={{
+                        backgroundColor: selectedSize === size ? themeColor : 'white',
+                        borderColor: selectedSize === size ? themeColor : undefined
+                      }}
+                    >
+                      {size}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Features */}
             <div className="mt-6">
               <ul className="space-y-2">
@@ -337,10 +463,18 @@ const ProductDetailView = ({
               </span>
             </div>
 
+            {/* Selection Error */}
+            {selectionError && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600 font-medium">{selectionError}</p>
+              </div>
+            )}
+
             {/* Shopping controls */}
             <div className="mt-auto pt-6">
               {product.quantity > 0 && (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex flex-col gap-4">
+                  {/* Quantity */}
                   <div>
                     <p className="text-sm font-medium text-gray-700 mb-2">Quantity</p>
                     <div className="flex items-center">
@@ -374,12 +508,13 @@ const ProductDetailView = ({
                     </div>
                   </div>
                   
+                  {/* Add to Cart Button */}
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleAddToCart}
                     disabled={product.quantity <= 0 || isAddingToCart}
-                    className="flex-1 h-12 rounded-lg font-medium text-white flex items-center justify-center space-x-2 transition-all relative overflow-hidden"
+                    className="w-full h-12 rounded-lg font-medium text-white flex items-center justify-center space-x-2 transition-all relative overflow-hidden"
                     style={{
                       backgroundColor: product.quantity > 0 ? themeColor : "gray",
                       opacity: product.quantity > 0 && !isAddingToCart ? 1 : 0.7,

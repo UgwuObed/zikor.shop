@@ -10,11 +10,16 @@ interface Product {
   discount_price: string;
   quantity: number;
   image_urls: string[];
+  colors: string[];
+  sizes: string[];
 }
 
 interface CartItem {
   id: number;
   quantity: number;
+  selectedColor?: string;
+  selectedSize?: string;
+  product?: Product;
 }
 
 interface BuyerInfo {
@@ -26,12 +31,6 @@ interface BuyerInfo {
   deliveryLocation?: ShippingFee;
   deliveryNotes?: string;
   shippingFee?: number;
-}
-
-interface BuyerInfo {
-  name: string;
-  email: string;
-  phone: string;
 }
 
 interface ShippingFee {
@@ -59,13 +58,11 @@ export default function useCart() {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationProduct, setNotificationProduct] = useState<Product | null>(null);
   
-  
   const calculateShippingFee = (deliveryLocation: ShippingFee | undefined, deliveryMethod: "pickup" | "delivery", cartItems: CartItem[]): number => {
     if (!deliveryLocation || deliveryMethod === "pickup") {
       return 0;
     }
     
- 
     let fee = Number.parseFloat(deliveryLocation.baseFee);
     
     const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -77,13 +74,11 @@ export default function useCart() {
     return fee;
   };
 
-  
   useEffect(() => {
     fetchCart();
   }, []);
 
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-  
 
   const fetchCart = async () => {
     try {
@@ -93,7 +88,16 @@ export default function useCart() {
       const response = await apiClient.get('/cart');
       
       if (response.data && response.data.items) {
-        setCartItems(response.data.items);
+       
+        const updatedItems = response.data.items.map((item: any) => ({
+          id: item.id,
+          quantity: item.quantity,
+          selectedColor: item.selected_color,
+          selectedSize: item.selected_size,
+          product: item.product
+        }));
+        
+        setCartItems(updatedItems);
         
         if (response.data.cart && response.data.cart.buyer_name) {
           setBuyerInfo({
@@ -115,23 +119,33 @@ export default function useCart() {
     }
   };
 
-  const addToCart = async (productId: number, quantity = 1, product?: Product) => {
+  const addToCart = async (
+    productId: number, 
+    quantity = 1, 
+    product?: Product, 
+    selectedColor?: string, 
+    selectedSize?: string
+  ) => {
     try {
       setLoading(true);
       setError(null);
       
       const response = await apiClient.post('/cart/add', {
         product_id: productId,
-        quantity: quantity
+        quantity: quantity,
+        selected_color: selectedColor,
+        selected_size: selectedSize
       });
       
       if (response.data && response.data.items) {
         const updatedItems = response.data.items.map((item: any) => ({
           id: item.id,
           quantity: item.quantity,
+          selectedColor: item.selected_color,
+          selectedSize: item.selected_size,
           product: item.product 
         }));
-        
+        console.log('Updated cart items:', updatedItems);
         setCartItems(updatedItems);
         
         if (product) {
@@ -150,23 +164,40 @@ export default function useCart() {
     }
   };
 
-  const updateCartItemQuantity = async (productId: number, newQuantity: number) => {
+  const updateCartItemQuantity = async (
+    productId: number, 
+    newQuantity: number,
+    selectedColor?: string,
+    selectedSize?: string
+  ) => {
     try {
       setLoading(true);
       setError(null);
       
-      
       const response = await apiClient.put(`/cart/item/${productId}`, {
-        quantity: newQuantity
+        quantity: newQuantity,
+        selected_color: selectedColor,
+        selected_size: selectedSize
       });
       
       if (response.data && response.data.items) {
-        setCartItems(response.data.items);
+        const updatedItems = response.data.items.map((item: any) => ({
+          id: item.id,
+          quantity: item.quantity,
+          selectedColor: item.selected_color,
+          selectedSize: item.selected_size,
+          product: item.product
+        }));
+        setCartItems(updatedItems);
       } else {
         console.warn('Server did not return updated cart items, updating locally');
         setCartItems(prevItems => 
           prevItems.map(item => 
-            item.id === productId ? { ...item, quantity: newQuantity } : item
+            item.id === productId && 
+            item.selectedColor === selectedColor && 
+            item.selectedSize === selectedSize
+              ? { ...item, quantity: newQuantity }
+              : item
           )
         );
       }
@@ -176,16 +207,23 @@ export default function useCart() {
       console.error('Error updating cart item:', err);
       
       if (err instanceof Error && (err as any).response && (err as any).response.status === 404) {
-        // console.log('Item not found, attempting to add item instead');
         try {
           const addResponse = await apiClient.post('/cart/add', {
             product_id: productId,
-            quantity: newQuantity
+            quantity: newQuantity,
+            selected_color: selectedColor,
+            selected_size: selectedSize
           });
           
           if (addResponse.data && addResponse.data.items) {
-            // console.log('Successfully added item:', addResponse.data.items);
-            setCartItems(addResponse.data.items);
+            const updatedItems = addResponse.data.items.map((item: any) => ({
+              id: item.id,
+              quantity: item.quantity,
+              selectedColor: item.selected_color,
+              selectedSize: item.selected_size,
+              product: item.product
+            }));
+            setCartItems(updatedItems);
             return true;
           }
         } catch (addErr) {
@@ -202,7 +240,6 @@ export default function useCart() {
     }
   };
 
- 
   const removeFromCart = async (productId: number) => {
     try {
       setLoading(true);
@@ -211,7 +248,14 @@ export default function useCart() {
       const response = await apiClient.delete(`/cart/item/${productId}`);
       
       if (response.data && response.data.items) {
-        setCartItems(response.data.items);
+        const updatedItems = response.data.items.map((item: any) => ({
+          id: item.id,
+          quantity: item.quantity,
+          selectedColor: item.selected_color,
+          selectedSize: item.selected_size,
+          product: item.product
+        }));
+        setCartItems(updatedItems);
       } else {
         console.warn('Server did not return updated cart items, removing locally');
         setCartItems(prevItems => prevItems.filter(item => item.id !== productId));
@@ -224,7 +268,6 @@ export default function useCart() {
     }
   };
 
- 
   const saveBuyerInfo = async (info: BuyerInfo): Promise<boolean> => {
     try {
       setLoading(true);
@@ -247,13 +290,11 @@ export default function useCart() {
     }
   };
 
-
   const checkout = async (buyerInfo: BuyerInfo): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
       
-    
       if (buyerInfo.deliveryMethod === "delivery" && buyerInfo.deliveryLocation && !buyerInfo.shippingFee) {
         buyerInfo.shippingFee = calculateShippingFee(
           buyerInfo.deliveryLocation, 
@@ -272,20 +313,18 @@ export default function useCart() {
       
       if (response.data && response.data.success) {
         setCartItems([]);
-      
         setShowCart(false);
-        
         setBuyerInfoSaved(false);
-        
         setBuyerInfo({
           name: '',
           email: '',
           phone: ''
         });
+        
         if (response.data.authorization_url) {
-                window.location.href = response.data.authorization_url;
-                return;
-            }
+          window.location.href = response.data.authorization_url;
+          return;
+        }
       } else {
         throw new Error(response.data?.message || 'Checkout failed');
       }

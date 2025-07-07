@@ -1,8 +1,7 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect, useRef, useCallback } from "react"
-import { motion, AnimatePresence, type PanInfo } from "framer-motion"
+import React, { useState, useEffect, useRef, useCallback } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   X,
   ShoppingCart,
@@ -26,6 +25,8 @@ import {
   Clock,
   ChevronUp,
   ChevronDown,
+  Palette,
+  Ruler,
 } from "lucide-react"
 
 interface Product {
@@ -36,6 +37,8 @@ interface Product {
   discount_price: string
   quantity: number
   image_urls: string[]
+  colors: string[]
+  sizes: string[]
   category: {
     name: string
   }
@@ -52,18 +55,20 @@ interface EnhancedProductModalProps {
   isOpen: boolean
   onClose: () => void
   product: Product | null
-  onAddToCart: (productId: number, quantity: number) => void
+  onAddToCart: (productId: number, quantity: number, selectedColor?: string, selectedSize?: string) => void
   themeColor: string
 }
 
-const ProductModal: React.FC<EnhancedProductModalProps> = ({
+const ProductModal = ({
   isOpen,
   onClose,
   product,
   onAddToCart,
   themeColor,
-}) => {
+}: EnhancedProductModalProps) => {
   const [quantity, setQuantity] = useState(1)
+  const [selectedColor, setSelectedColor] = useState<string>("")
+  const [selectedSize, setSelectedSize] = useState<string>("")
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [activeTab, setActiveTab] = useState<"description" | "specifications" | "features">("description")
   const [isFavorite, setIsFavorite] = useState(false)
@@ -74,18 +79,29 @@ const ProductModal: React.FC<EnhancedProductModalProps> = ({
   const [dragY, setDragY] = useState(0)
   const [touchStart, setTouchStart] = useState(0)
   const [touchEnd, setTouchEnd] = useState(0)
+  const [selectionError, setSelectionError] = useState<string>("")
   const imageRef = useRef<HTMLImageElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
     if (product) {
       setQuantity(1)
+      setSelectedColor("")
+      setSelectedSize("")
       setCurrentImageIndex(0)
       setActiveTab("description")
       setIsAddedToCart(false)
       setIsFullscreenImage(false)
       setIsZoomed(false)
       setIsExpanded(false)
+      setSelectionError("")
+    
+    if (Array.isArray(product.colors) && product.colors.length === 1) {
+      setSelectedColor(product.colors[0])
+    }
+    if (Array.isArray(product.sizes) && product.sizes.length === 1) {
+      setSelectedSize(product.sizes[0])
+    }
     }
   }, [product])
 
@@ -114,14 +130,53 @@ const ProductModal: React.FC<EnhancedProductModalProps> = ({
     }
   }, [isOpen, onClose, isFullscreenImage])
 
-  const handleDrag = useCallback((event: any, info: PanInfo) => {
+
+//   useEffect(() => {
+//     console.log('Product in modal:', {
+//         ...product,
+//         colors: product?.colors,
+//         sizes: product?.sizes
+//     });
+// }, [product]);
+
+  const handleColorSelect = (color: string) => {
+    setSelectedColor(color)
+    setSelectionError("")
+  }
+
+  const handleSizeSelect = (size: string) => {
+    setSelectedSize(size)
+    setSelectionError("")
+  }
+
+  const validateSelections = () => {
+    const errors = []
+    
+    if (Array.isArray(product?.colors) && product.colors.length > 0 && !selectedColor) {
+    errors.push("Please select a color")
+    }
+  
+    if (Array.isArray(product?.sizes) && product.sizes.length > 0 && !selectedSize) {
+      errors.push("Please select a size")
+    }
+    
+    if (errors.length > 0) {
+      setSelectionError(errors.join(" and "))
+      return false
+    }
+    
+    setSelectionError("")
+    return true
+  }
+
+  const handleDrag = useCallback((event: any, info: any) => {
     if (info.offset.y > 0) {
       setDragY(info.offset.y)
     }
   }, [])
 
   const handleDragEnd = useCallback(
-    (event: any, info: PanInfo) => {
+    (event: any, info: any) => {
       if (info.offset.y > 100 || info.velocity.y > 500) {
         onClose()
       } else {
@@ -220,6 +275,8 @@ const ProductModal: React.FC<EnhancedProductModalProps> = ({
   const hasMultipleImages = product.image_urls && product.image_urls.length > 1
   const hasFeatures = product.features && product.features.length > 0
   const hasSpecs = product.specifications && Object.keys(product.specifications).length > 0
+  const hasColors = Array.isArray(product.colors) && product.colors.length > 0
+  const hasSizes = Array.isArray(product.sizes) && product.sizes.length > 0
 
   const handleIncrement = () => {
     if (quantity < product.quantity) {
@@ -235,11 +292,15 @@ const ProductModal: React.FC<EnhancedProductModalProps> = ({
 
   const handleAddToCart = () => {
     if (!isInStock) return
+    
+    if (!validateSelections()) {
+      return
+    }
 
     setIsAddedToCart(true)
 
     setTimeout(() => {
-      onAddToCart(product.id, quantity)
+      onAddToCart(product.id, quantity, selectedColor || undefined, selectedSize || undefined)
       setTimeout(() => {
         onClose()
       }, 500)
@@ -540,11 +601,89 @@ const ProductModal: React.FC<EnhancedProductModalProps> = ({
                         )}
                       </div>
 
+                      {/* Color Selection - Mobile */}
+                      {hasColors && (
+                        <div className="space-y-3">
+                          <div className="flex items-center">
+                            <Palette size={16} className="mr-2 text-gray-600" />
+                            <h3 className="text-sm font-semibold text-gray-800">
+                              Color
+                              {selectedColor && (
+                                <span className="ml-2 text-xs font-normal text-gray-600">- {selectedColor}</span>
+                              )}
+                            </h3>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {/* {product.colors!.map((color) => ( */}
+                              {Array.isArray(product.colors) && product.colors.map((color) => (
+                              <button
+                                key={color}
+                                onClick={() => handleColorSelect(color)}
+                                className={`px-3 py-1.5 rounded-lg border-2 transition-all duration-200 text-sm ${
+                                  selectedColor === color
+                                    ? 'border-opacity-100 shadow-md text-white'
+                                    : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                                }`}
+                                style={{
+                                  backgroundColor: selectedColor === color ? themeColor : 'white',
+                                  borderColor: selectedColor === color ? themeColor : undefined
+                                }}
+                              >
+                                {color}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Size Selection - Mobile */}
+                      {hasSizes && (
+                        <div className="space-y-3">
+                          <div className="flex items-center">
+                            <Ruler size={16} className="mr-2 text-gray-600" />
+                            <h3 className="text-sm font-semibold text-gray-800">
+                              Size
+                              {selectedSize && (
+                                <span className="ml-2 text-xs font-normal text-gray-600">- {selectedSize}</span>
+                              )}
+                            </h3>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {/* {product.sizes!.map((size) => ( */}
+
+                            {Array.isArray(product.sizes) && product.sizes.map((size) => (
+                              <button
+                                key={size}
+                                onClick={() => handleSizeSelect(size)}
+                                className={`px-3 py-1.5 rounded-lg border-2 transition-all duration-200 text-sm min-w-[2.5rem] ${
+                                  selectedSize === size
+                                    ? 'border-opacity-100 shadow-md text-white'
+                                    : 'border-gray-300 text-gray-700 hover:border-gray-400'
+                                }`}
+                                style={{
+                                  backgroundColor: selectedSize === size ? themeColor : 'white',
+                                  borderColor: selectedSize === size ? themeColor : undefined
+                                }}
+                              >
+                                {size}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {/* Stock status */}
                       <div className="flex items-center space-x-2">
                         <div className={`w-2 h-2 rounded-full ${isInStock ? "bg-green-500" : "bg-red-500"}`} />
                         <span className="text-sm text-gray-600">{isInStock ? "In Stock" : "Out of Stock"}</span>
                       </div>
+
+                      {/* Selection Error */}
+                      {selectionError && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-xs text-red-600 font-medium">{selectionError}</p>
+                        </div>
+                      )}
 
                       {/* Quantity selector */}
                       {isInStock && (
@@ -721,7 +860,7 @@ const ProductModal: React.FC<EnhancedProductModalProps> = ({
               </motion.div>
             </div>
 
-            {/* Desktop Modal - Enhanced with Expandable and Scrollable */}
+            {/* Desktop Modal */}
             <div className="hidden md:flex fixed inset-0 z-50 items-center justify-center p-4">
               <motion.div
                 variants={desktopModalVariants}
@@ -788,7 +927,7 @@ const ProductModal: React.FC<EnhancedProductModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Desktop Content Grid - Scrollable */}
+                  {/* Desktop Scrollable */}
                   <div className="flex-1 overflow-y-auto scrollbar-hide">
                     <div className="grid grid-cols-1 xl:grid-cols-5 min-h-full">
                       {/* Left Column - Images */}
@@ -905,7 +1044,7 @@ const ProductModal: React.FC<EnhancedProductModalProps> = ({
                         </div>
                       </div>
 
-                      {/* Right Column - Product Info - Scrollable */}
+                      {/* Right Column  */}
                       <div className="xl:col-span-2 bg-gray-50 p-6 lg:p-8 flex flex-col overflow-y-auto scrollbar-hide">
                         <div className="space-y-6">
                           {/* Product Title */}
@@ -962,6 +1101,78 @@ const ProductModal: React.FC<EnhancedProductModalProps> = ({
                             )}
                           </div>
 
+                          {/* Color Selection - Desktop */}
+                          {hasColors && (
+                            <div className="space-y-4 p-6 bg-white rounded-2xl shadow-sm">
+                              <div className="flex items-center">
+                                <Palette size={20} className="mr-3 text-gray-600" />
+                                <h3 className="text-lg font-semibold text-gray-800">
+                                  Color
+                                  {selectedColor && (
+                                    <span className="ml-2 text-sm font-normal text-gray-600">- {selectedColor}</span>
+                                  )}
+                                </h3>
+                              </div>
+                              <div className="flex flex-wrap gap-3">
+                                {/* {product.colors!.map((color) => ( */}
+
+                                {Array.isArray(product.colors) && product.colors.map((color) => (
+                                  <button
+                                    key={color}
+                                    onClick={() => handleColorSelect(color)}
+                                    className={`px-4 py-3 rounded-xl border-2 transition-all duration-200 font-medium ${
+                                      selectedColor === color
+                                        ? 'border-opacity-100 shadow-lg text-white transform scale-105'
+                                        : 'border-gray-300 text-gray-700 hover:border-gray-400 hover:shadow-md'
+                                    }`}
+                                    style={{
+                                      backgroundColor: selectedColor === color ? themeColor : 'white',
+                                      borderColor: selectedColor === color ? themeColor : undefined
+                                    }}
+                                  >
+                                    {color}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Size Selection - Desktop */}
+                          {hasSizes && (
+                            <div className="space-y-4 p-6 bg-white rounded-2xl shadow-sm">
+                              <div className="flex items-center">
+                                <Ruler size={20} className="mr-3 text-gray-600" />
+                                <h3 className="text-lg font-semibold text-gray-800">
+                                  Size
+                                  {selectedSize && (
+                                    <span className="ml-2 text-sm font-normal text-gray-600">- {selectedSize}</span>
+                                  )}
+                                </h3>
+                              </div>
+                              <div className="flex flex-wrap gap-3">
+                                {/* {product.sizes!.map((size) => ( */}
+
+                                {Array.isArray(product.sizes) && product.sizes.map((size) => (
+                                  <button
+                                    key={size}
+                                    onClick={() => handleSizeSelect(size)}
+                                    className={`px-4 py-3 rounded-xl border-2 transition-all duration-200 font-medium min-w-[3.5rem] ${
+                                      selectedSize === size
+                                        ? 'border-opacity-100 shadow-lg text-white transform scale-105'
+                                        : 'border-gray-300 text-gray-700 hover:border-gray-400 hover:shadow-md'
+                                    }`}
+                                    style={{
+                                      backgroundColor: selectedSize === size ? themeColor : 'white',
+                                      borderColor: selectedSize === size ? themeColor : undefined
+                                    }}
+                                  >
+                                    {size}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
                           {/* Stock Status */}
                           <div className="flex items-center justify-between p-6 bg-white rounded-2xl shadow-sm">
                             <div className="flex items-center space-x-4">
@@ -984,6 +1195,13 @@ const ProductModal: React.FC<EnhancedProductModalProps> = ({
                             </div>
                             {isInStock && <Package size={24} className="text-gray-400" />}
                           </div>
+
+                          {/* Selection Error - Desktop */}
+                          {selectionError && (
+                            <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+                              <p className="text-sm text-red-600 font-medium">{selectionError}</p>
+                            </div>
+                          )}
 
                           {/* Trust Badges */}
                           <div className="grid grid-cols-2 gap-4">
@@ -1074,7 +1292,7 @@ const ProductModal: React.FC<EnhancedProductModalProps> = ({
                             </div>
                           )}
 
-                          {/* Product Details Tabs - Only show if expanded */}
+                          {/* Product Details Tabs  */}
                           {isExpanded && (
                             <div className="space-y-4">
                               <div className="flex space-x-1 bg-white rounded-2xl p-1 shadow-sm">

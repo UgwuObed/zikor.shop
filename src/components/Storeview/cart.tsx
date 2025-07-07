@@ -16,6 +16,8 @@ interface Product {
   discount_price: string
   quantity: number
   image_urls: string[]
+  selectedColor?: string
+  selectedSize?: string
 }
 
 interface BuyerInfo {
@@ -38,6 +40,8 @@ interface ShippingFee {
 interface CartItem {
   id: number
   quantity: number
+  selectedColor?: string
+  selectedSize?: string
 }
 
 interface ShoppingCartProps {
@@ -45,7 +49,7 @@ interface ShoppingCartProps {
   onClose: () => void
   cartItems: CartItem[]
   products: Product[]
-  onUpdateQuantity: (productId: number, newQuantity: number) => void
+  onUpdateQuantity: (productId: number, newQuantity: number,  selectedColor?: string, selectedSize?: string) => void
   onRemoveItem: (productId: number) => void
   onCheckout: (buyerInfo: BuyerInfo) => Promise<void>
   onSaveBuyerInfo?: (buyerInfo: BuyerInfo) => Promise<void>
@@ -505,61 +509,90 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({
                       </div>
 
                       <div className="ml-4 flex-1">
-                        <div className="flex justify-between">
-                          <h3 className="font-medium text-gray-900 line-clamp-2 pr-2">{product.name}</h3>
-                          <motion.button
-                            whileHover={{ scale: 1.1, backgroundColor: "#FEE2E2" }}
-                            whileTap={{ scale: 0.9 }}
-                            onClick={() => handleRemoveItem(product.id)}
-                            className="text-gray-400 hover:text-red-500 transition-colors p-1.5 rounded-full bg-white shadow-sm border border-gray-100"
-                          >
-                            <Trash2 size={14} />
-                          </motion.button>
-                        </div>
+  <div className="flex justify-between">
+    <div className="pr-2">
+      <h3 className="font-medium text-gray-900 line-clamp-2">{product.name}</h3>
+      
+      {/* Show selected color and size */}
+      <div className="flex flex-wrap gap-2 mt-1">
+        {product.selectedColor && (
+          <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+            Color: {product.selectedColor}
+          </span>
+        )}
+        {product.selectedSize && (
+          <span className="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-600">
+            Size: {product.selectedSize}
+          </span>
+        )}
+      </div>
+    </div>
+    
+    <motion.button
+      whileHover={{ scale: 1.1, backgroundColor: "#FEE2E2" }}
+      whileTap={{ scale: 0.9 }}
+      onClick={() => handleRemoveItem(product.id)}
+      className="text-gray-400 hover:text-red-500 transition-colors p-1.5 rounded-full bg-white shadow-sm border border-gray-100"
+    >
+      <Trash2 size={14} />
+    </motion.button>
+  </div>
 
-                        <div className="flex items-center mt-2">
-                      <span className="font-semibold text-lg" style={{ color: themeColor }}>
-                        ₦{Number(product.discount_price || product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                      </span>
-            
-                      {product.discount_price && Number(product.main_price) > Number(product.discount_price) && (
-                        <span className="text-xs text-gray-400 line-through ml-2">
-                          ₦{Number(product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                        </span>
-                      )}
-                    </div>
-                        <div className="flex items-center justify-between mt-3">
-                          <div className="flex items-center border rounded-full bg-white overflow-hidden shadow-sm" style={{ borderColor: `${themeColor}30` }}>
-                            <motion.button
-                              whileHover={{ backgroundColor: `${themeColor}10` }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => onUpdateQuantity(product.id, Math.max(1, product.cartQuantity - 1))}
-                              className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
-                              disabled={product.cartQuantity <= 1}
-                              style={{ color: product.cartQuantity <= 1 ? 'gray' : themeColor }}
-                            >
-                              <Minus size={14} />
-                            </motion.button>
-                            <span className="w-8 text-center text-sm font-medium">{product.cartQuantity}</span>
-                            <motion.button
-                              whileHover={{ backgroundColor: `${themeColor}10` }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => onUpdateQuantity(product.id, product.cartQuantity + 1)}
-                              className="w-8 h-8 flex items-center justify-center transition-colors"
-                              disabled={product.cartQuantity >= product.quantity}
-                              style={{ color: product.cartQuantity >= product.quantity ? 'gray' : themeColor }}
-                            >
-                              <Plus size={14} />
-                            </motion.button>
-                          </div>
+  {/* Price and quantity controls remain the same */}
+  <div className="flex items-center mt-2">
+    <span className="font-semibold text-lg" style={{ color: themeColor }}>
+      ₦{Number(product.discount_price || product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+    </span>
 
-                          <div className="text-sm font-bold text-gray-700 bg-white px-3 py-1 rounded-full shadow-sm" style={{ borderLeft: `3px solid ${themeColor}` }}>
-                            {formatPrice(
-                              Number(product.discount_price || product.main_price) * product.cartQuantity,
-                            )}
-                          </div>
-                        </div>
-                      </div>
+    {product.discount_price && Number(product.main_price) > Number(product.discount_price) && (
+      <span className="text-xs text-gray-400 line-through ml-2">
+        ₦{Number(product.main_price).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+      </span>
+    )}
+  </div>
+  
+  <div className="flex items-center justify-between mt-3">
+    <div className="flex items-center border rounded-full bg-white overflow-hidden shadow-sm" style={{ borderColor: `${themeColor}30` }}>
+      <motion.button
+        whileHover={{ backgroundColor: `${themeColor}10` }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => onUpdateQuantity(
+          product.id, 
+          Math.max(1, product.cartQuantity - 1),
+          product.selectedColor,
+          product.selectedSize
+        )}
+        className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 transition-colors"
+        disabled={product.cartQuantity <= 1}
+        style={{ color: product.cartQuantity <= 1 ? 'gray' : themeColor }}
+      >
+        <Minus size={14} />
+      </motion.button>
+      <span className="w-8 text-center text-sm font-medium">{product.cartQuantity}</span>
+      <motion.button
+        whileHover={{ backgroundColor: `${themeColor}10` }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => onUpdateQuantity(
+          product.id, 
+          product.cartQuantity + 1,
+          product.selectedColor,
+          product.selectedSize
+        )}
+        className="w-8 h-8 flex items-center justify-center transition-colors"
+        disabled={product.cartQuantity >= product.quantity}
+        style={{ color: product.cartQuantity >= product.quantity ? 'gray' : themeColor }}
+      >
+        <Plus size={14} />
+      </motion.button>
+    </div>
+
+    <div className="text-sm font-bold text-gray-700 bg-white px-3 py-1 rounded-full shadow-sm" style={{ borderLeft: `3px solid ${themeColor}` }}>
+      {formatPrice(
+        Number(product.discount_price || product.main_price) * product.cartQuantity,
+      )}
+    </div>
+  </div>
+</div>
                     </div>
                   </div>
                 </motion.div>

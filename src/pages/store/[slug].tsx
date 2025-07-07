@@ -132,6 +132,33 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
     fetchShippingFees();
   }, [slug]);
 
+
+  const normalizeProductData = (product: any): Product => {
+  const parseArrayField = (field: any): string[] => {
+    if (Array.isArray(field)) {
+      return field;
+    }
+    if (typeof field === 'string') {
+      try {
+        const parsed = JSON.parse(field);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+       
+        return field ? [field] : [];
+      }
+    }
+    return [];
+  };
+
+  return {
+    ...product,
+    colors: parseArrayField(product.colors),
+    sizes: parseArrayField(product.sizes),
+    image_urls: Array.isArray(product.image_urls) 
+      ? product.image_urls 
+      : [product.image_urls || ''].filter(Boolean)
+  };
+};
  
   useEffect(() => {
     if (!slug) {
@@ -140,26 +167,47 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
       return;
     }
     
-    async function fetchStorefront() {
-      try {
-        console.log('Fetching storefront data for slug:', slug);
-        setLoading(true);
-        const response = await apiClient.get(`/store/${slug}`);
-        if (!response.data) {
-          throw new Error("Failed to load storefront");
-        }
-        console.log('Storefront data loaded successfully');
-        setStorefrontData(response.data);
-      } catch (err) {
-        console.error('Error fetching storefront:', err);
-        setError(err instanceof Error ? err.message : "An unknown error occurred");
-      } finally {
-        setLoading(false);
+ async function fetchStorefront() {
+    try {
+      console.log('Fetching storefront data for slug:', slug);
+      setLoading(true);
+      const response = await apiClient.get(`/store/${slug}`);
+      if (!response.data) {
+        throw new Error("Failed to load storefront");
       }
+      // console.log('Raw API Response:', response.data);
+      // console.log('Products from API:', response.data.products);
+      // console.log('First product colors/sizes:', {
+      //   colors: response.data.products[0]?.colors,
+      //   sizes: response.data.products[0]?.sizes,
+      //   colorsType: typeof response.data.products[0]?.colors,
+      //   sizesType: typeof response.data.products[0]?.sizes
+      // });
+      
+     
+      const normalizedData = {
+        ...response.data,
+        products: response.data.products.map(normalizeProductData)
+      };
+      
+      // console.log('After normalization:', {
+      //   colors: normalizedData.products[0]?.colors,
+      //   sizes: normalizedData.products[0]?.sizes,
+      //   colorsType: typeof normalizedData.products[0]?.colors,
+      //   sizesType: typeof normalizedData.products[0]?.sizes
+      // });
+      
+      setStorefrontData(normalizedData);
+    } catch (err) {
+      console.error('Error fetching storefront:', err);
+      setError(err instanceof Error ? err.message : "An unknown error occurred");
+    } finally {
+      setLoading(false);
     }
-    
-    fetchStorefront();
-  }, [slug]);
+  }
+  
+  fetchStorefront();
+}, [slug]);
 
   const themeColor = storefrontData?.storefront.color_theme || "#6366f1"
 
@@ -192,10 +240,13 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
     setShowProductModal(true)
   }
 
-  const handleAddToCart = (productId: number, quantity = 1) => {
+  const handleAddToCart = (productId: number, quantity = 1,
+      selectedColor?: string, 
+      selectedSize?: string
+  ) => {
     const product = storefrontData?.products.find(p => p.id === productId)
     if (product) {
-      addToCart(productId, quantity, product)
+      addToCart(productId, quantity, product, selectedColor, selectedSize)
     }
   }
 
