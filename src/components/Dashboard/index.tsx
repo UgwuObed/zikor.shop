@@ -58,7 +58,7 @@ const Dashboard = () => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Add store info fetching useEffect
+  
   useEffect(() => {
     const fetchStoreInfo = async () => {
       try {
@@ -86,135 +86,122 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    const fetchDashboardStats = async () => {
-      const accessToken = localStorage.getItem('accessToken');
-      try {
-  
-        const today = new Date();
-      
-        const last30Days = new Date(today);
-        last30Days.setDate(today.getDate() - 30);
-        
-        const previous30Start = new Date(last30Days);
-        previous30Start.setDate(previous30Start.getDate() - 30);
-        
+  const fetchDashboardStats = async () => {
+    const accessToken = localStorage.getItem('accessToken');
+    try {
 
-        
-        const dateFormat: DateFormatter = (date) => date.toISOString().split('T')[0];
-        
-        const currentPeriod = {
-          start_date: dateFormat(last30Days),
-          end_date: dateFormat(today)
-        };
-        
-        const previousPeriod = {
-          start_date: dateFormat(previous30Start),
-          end_date: dateFormat(last30Days)
-        };
-        
-        
-        const currentRevenueResponse = await apiClient.get('/stats', { 
-          params: currentPeriod,
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
-        });
-        
-        const previousRevenueResponse = await apiClient.get('/stats', { 
-          params: previousPeriod ,
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
-        });
-        
-        const productsResponse = await apiClient.get('/products', {
-          params: { 
-            per_page: 1,
-            status: 'active'
-          },
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
-        });
-        
- 
-        const currentStats = currentRevenueResponse.data.stats;
-        const previousStats = previousRevenueResponse.data.stats;
-        
-        const calculateChange: ChangeCalculator = (current, previous) => {
-          if (previous === 0) return '+0%';
-          const change = ((current - previous) / previous) * 100;
-          return (change >= 0 ? '+' : '') + change.toFixed(1) + '%';
-        };
-        
-        const currentRevenue = currentStats.total_revenue || 0;
-        const previousRevenue = previousStats.total_revenue || 0;
-        const revenueChange = calculateChange(currentRevenue, previousRevenue);
-        
-        const currentOrders = currentStats.total_orders || 0;
-        const previousOrders = previousStats.total_orders || 0;
-        const ordersChange = calculateChange(currentOrders, previousOrders);
-        
-   
-        const activeProducts = productsResponse?.data?.count || 0;
-        
+      const today = new Date();
     
-        const newCustomers = 0;
-        const customersChange = '+0%';
-        
-        // try {
-        //   const buyersResponse = await apiClient.get('/store/buyers', {
-        //     params: currentPeriod,
-        //     headers: {
-        //       'Authorization': `Bearer ${accessToken}`
-        //     }
-        //   });
-          
-        //   if (buyersResponse.data.success) {
-        //     newCustomers = buyersResponse.data.stats.total_unique_buyers || 0;
-            
-        //     const previousBuyersResponse = await apiClient.get('/store/buyers', {
-        //       params: previousPeriod,
-        //       headers: {
-        //         'Authorization': `Bearer ${accessToken}`
-        //       }
-        //     });
-            
-        //     if (previousBuyersResponse.data.success) {
-        //       const previousCustomers = previousBuyersResponse.data.stats.total_unique_buyers || 0;
-        //       customersChange = calculateChange(newCustomers, previousCustomers);
-        //     }
-        //   }
-        // } catch (err) {
-        //   console.error('Error fetching customer stats:', err);
-        
-        // }
+      const last30Days = new Date(today);
+      last30Days.setDate(today.getDate() - 30);
       
-        setDashboardStats({
-          totalRevenue: currentRevenue,
-          totalOrders: currentOrders,
-          activeProducts: activeProducts,
-          newCustomers: newCustomers,
-          revenueChange: revenueChange,
-          ordersChange: ordersChange,
-          productsChange: '+5.1%', 
-          customersChange: customersChange,
-          loading: false,
-          error: null
-        });
-        
-      } catch (err) {
-        console.error('Error fetching dashboard stats:', err);
-        setDashboardStats(prevState => ({
-          ...prevState,
-          loading: false,
-          error: 'Failed to load dashboard statistics'
-        }));
-      }
-    };
-    
-    fetchDashboardStats();
-  }, []);
+      const previous30Start = new Date(last30Days);
+      previous30Start.setDate(previous30Start.getDate() - 30);
+      
+
+      
+      const dateFormat: DateFormatter = (date) => date.toISOString().split('T')[0];
+      
+      const currentPeriod = {
+        start_date: dateFormat(last30Days),
+        end_date: dateFormat(today)
+      };
+      
+      const previousPeriod = {
+        start_date: dateFormat(previous30Start),
+        end_date: dateFormat(last30Days)
+      };
+      
+      // console.log('Current period:', currentPeriod);
+      // console.log('API URL:', '/stats', 'with params:', currentPeriod);
+      
+      // // Get 30-day filtered stats for revenue
+      const currentRevenueResponse = await apiClient.get('/stats', { 
+        params: currentPeriod,
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      
+      const previousRevenueResponse = await apiClient.get('/stats', { 
+        params: previousPeriod ,
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      
+      // Get ALL-TIME total orders (no date filter)
+      const allTimeOrdersResponse = await apiClient.get('/stats', {
+        // No params = all time data
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      
+      const productsResponse = await apiClient.get('/products', {
+        params: { 
+          per_page: 1,
+          status: 'active'
+        },
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      });
+      
+
+      const currentStats = currentRevenueResponse.data.stats;
+      const previousStats = previousRevenueResponse.data.stats;
+      const allTimeStats = allTimeOrdersResponse.data.stats;
+      
+      const calculateChange: ChangeCalculator = (current, previous) => {
+        if (previous === 0) return '+0%';
+        const change = ((current - previous) / previous) * 100;
+        return (change >= 0 ? '+' : '') + change.toFixed(1) + '%';
+      };
+      
+      // Use ALL-TIME data for both revenue and orders
+      const totalRevenue = allTimeStats.total_revenue || 0;  // All-time revenue
+      const totalOrders = allTimeStats.total_orders || 0;    // All-time orders
+      
+      // For percentage changes, still compare 30-day periods for meaningful trends
+      const current30DayRevenue = currentStats.total_revenue || 0;
+      const previous30DayRevenue = previousStats.total_revenue || 0;
+      const revenueChange = calculateChange(current30DayRevenue, previous30DayRevenue);
+      
+      const current30DayOrders = currentStats.total_orders || 0;
+      const previous30DayOrders = previousStats.total_orders || 0;
+      const ordersChange = calculateChange(current30DayOrders, previous30DayOrders);
+   
+      const activeProducts = productsResponse?.data?.count || 0;
+      
+      const newCustomers = 0;
+      const customersChange = '+0%';
+      
+      setDashboardStats({
+        totalRevenue: totalRevenue,   // ALL-TIME revenue
+        totalOrders: totalOrders,     // ALL-TIME orders
+        activeProducts: activeProducts,
+        newCustomers: newCustomers,
+        revenueChange: revenueChange, // 30-day trend comparison
+        ordersChange: ordersChange,   // 30-day trend comparison
+        productsChange: '+5.1%', 
+        customersChange: customersChange,
+        loading: false,
+        error: null
+      });
+      
+    } catch (err) {
+      console.error('Error fetching dashboard stats:', err);
+      setDashboardStats(prevState => ({
+        ...prevState,
+        loading: false,
+        error: 'Failed to load dashboard statistics'
+      }));
+    }
+  };
+  
+  fetchDashboardStats();
+}, []);
 
   useEffect(() => {
     setMobileMenuOpen(false);

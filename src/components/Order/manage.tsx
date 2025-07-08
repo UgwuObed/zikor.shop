@@ -97,6 +97,8 @@ interface Order {
     discount_price?: number
     quantity: number
     total: number
+    selected_color?: string
+    selected_size?: string
   }>
   subtotal: number
   shipping: number
@@ -364,6 +366,18 @@ const OrderDetails = ({ order, onClose, onStatusChange }: OrderDetailsProps) => 
                               >
                                 Total
                               </th>
+                              <th
+                                scope="col"
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Color
+                              </th>
+                              <th
+                                scope="col"
+                                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Size
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
@@ -537,7 +551,7 @@ const OrdersManagement = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [filters, setFilters] = useState({
     status: "",
-    payment_status: "",
+    payment_status: "paid",
     start_date: "",
     end_date: "",
   })
@@ -734,7 +748,7 @@ const OrdersManagement = () => {
                 onClick={() => {
                   setFilters({
                     status: "",
-                    payment_status: "",
+                    payment_status: "paid",
                     start_date: "",
                     end_date: "",
                   })

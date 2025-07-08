@@ -34,7 +34,7 @@ const RecentOrders = () => {
       try {
         setLoading(true);
        
-        const response = await apiClient.get('/order/all', {
+        const response = await apiClient.get('/order/all?payment_status=paid', {
           headers: {
           'Authorization': `Bearer ${accessToken}`
         },
