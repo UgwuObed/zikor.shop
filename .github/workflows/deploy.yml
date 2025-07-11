@@ -4,7 +4,7 @@ name: Deploy to Production
 on:
   push:
     branches: main 
-  workflow_dispatch:  
+  workflow_dispatch:  # Allows manual triggering
 
 jobs:
   deploy:
@@ -34,50 +34,44 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.PORT || 22 }}
         script: |
-          set -e  # Exit on any error
+          echo "🚀 Starting deployment..."
           
-          echo "🚀 Starting deployment....."
-          
-          # Navigate to project directory
+          # Navigate and fix permissions first
           cd /var/www/zikor.shop
+          chown -R root:root .
           
-          # Fix git ownership issues
-          sudo chown -R root:root .git
+          # Configure git
           git config --global --add safe.directory /var/www/zikor.shop
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
           
-          # Pull latest changes
+          # Reset any changes and pull
           echo "⬇️ Pulling latest changes..."
-          git fetch origin
-          git reset --hard origin/main
+          git reset --hard HEAD
+          git clean -fd
+          git pull origin main
           
-          # Clean and fix permissions
+          # Clean build files
           echo "🧹 Cleaning old build files..."
-          sudo rm -rf .next
-          sudo rm -rf node_modules
+          rm -rf .next node_modules
           
-          # Install dependencies with legacy peer deps
+          # Install and build
           echo "📚 Installing dependencies..."
           npm install --legacy-peer-deps
           
-          # Build application
           echo "🔨 Building application..."
           npm run build
           
-          # Check if PM2 process exists and handle accordingly
+          # Handle PM2
           echo "🔄 Managing PM2 process..."
           if pm2 describe zikor > /dev/null 2>&1; then
-            echo "Restarting existing PM2 process..."
             pm2 restart zikor
           else
-            echo "Starting new PM2 process..."
             pm2 start npm --name "zikor" -- start
           fi
           
-          # Wait a moment and check status
-          sleep 3
           pm2 status
-          
-          echo "✅ Deployment completed successfully!"
+          echo "✅ Deployment completed!"
           
     - name: Notify deployment status
       if: always()
