@@ -39,7 +39,7 @@ jobs:
           git pull origin main 
           
           # Install dependencies
-          npm install  # Ensure dependencies are installed on the server
+          npm install  
           
           # Build the application
           npm run build
