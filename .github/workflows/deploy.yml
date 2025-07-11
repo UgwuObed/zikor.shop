@@ -35,6 +35,8 @@ jobs:
         script: |
           cd /var/www/zikor.shop  
           
+          git config --global --add safe.directory /var/www/zikor.shop
+
           # Pull latest changes
           git pull origin main 
           
