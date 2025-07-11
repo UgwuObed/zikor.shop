@@ -39,8 +39,6 @@ jobs:
           # Pull latest changes
           git pull origin main 
           
-        
-          npm ci
           
           # Build the application
           npm run build
