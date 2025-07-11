@@ -1,0 +1,61 @@
+# .github/workflows/deploy.yml
+name: Deploy to Production
+
+on:
+  push:
+    branches: main
+  workflow_dispatch: 
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'  
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.PORT || 22 }}
+        script: |
+          cd /var/www/zikor.shop  
+          
+          # Pull latest changes
+          git pull origin main 
+          
+        
+          npm ci
+          
+          # Build the application
+          npm run build
+          
+          # Restart PM2 process
+          pm2 restart zikor
+          
+          # Optional: Show PM2 status
+          pm2 status
+          
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ Deployment successful!"
+        else
+          echo "❌ Deployment failed!"
+        fi
