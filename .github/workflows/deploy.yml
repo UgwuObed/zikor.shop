@@ -1,9 +1,10 @@
+# .github/workflows/deploy.yml
 name: Deploy to Production
 
 on:
   push:
-    branches: main
-  workflow_dispatch: 
+    branches: main 
+  workflow_dispatch:  
 
 jobs:
   deploy:
@@ -21,7 +22,7 @@ jobs:
         
     - name: Install dependencies
       run: npm install --legacy-peer-deps
-
+      
     - name: Build application
       run: npm run build
       
@@ -33,24 +34,50 @@ jobs:
         key: ${{ secrets.SSH_PRIVATE_KEY }}
         port: ${{ secrets.PORT || 22 }}
         script: |
-          cd /var/www/zikor.shop  
+          set -e  # Exit on any error
           
+          echo "🚀 Starting deployment..."
+          
+          # Navigate to project directory
+          cd /var/www/zikor.shop
+          
+          # Fix git ownership issues
+          sudo chown -R root:root .git
           git config --global --add safe.directory /var/www/zikor.shop
-
+          
           # Pull latest changes
-          git pull origin main 
+          echo "⬇️ Pulling latest changes..."
+          git fetch origin
+          git reset --hard origin/main
           
-          # Install dependencies
-          npm install  
+          # Clean and fix permissions
+          echo "🧹 Cleaning old build files..."
+          sudo rm -rf .next
+          sudo rm -rf node_modules
           
-          # Build the application
+          # Install dependencies with legacy peer deps
+          echo "📚 Installing dependencies..."
+          npm install --legacy-peer-deps
+          
+          # Build application
+          echo "🔨 Building application..."
           npm run build
           
-          # Restart PM2 process
-          pm2 restart zikor
+          # Check if PM2 process exists and handle accordingly
+          echo "🔄 Managing PM2 process..."
+          if pm2 describe zikor > /dev/null 2>&1; then
+            echo "Restarting existing PM2 process..."
+            pm2 restart zikor
+          else
+            echo "Starting new PM2 process..."
+            pm2 start npm --name "zikor" -- start
+          fi
           
-          # Optional: Show PM2 status
+          # Wait a moment and check status
+          sleep 3
           pm2 status
+          
+          echo "✅ Deployment completed successfully!"
           
     - name: Notify deployment status
       if: always()
