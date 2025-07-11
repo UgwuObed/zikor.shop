@@ -36,7 +36,7 @@ jobs:
         script: |
           set -e  # Exit on any error
           
-          echo "🚀 Starting deployment..."
+          echo "🚀 Starting deployment....."
           
           # Navigate to project directory
           cd /var/www/zikor.shop
