@@ -268,7 +268,7 @@ const StorefrontPage: React.FC<StorePageProps> = ({ slug }) => {
   const handleCheckout = async (buyerInfo: BuyerInfo) => {
     try {
       await checkout(buyerInfo)
-      router.push('/checkout/success')
+      // router.push('/checkout/success')
     } catch (error) {
       console.error('Checkout failed:', error)
     }
