@@ -1,64 +1,89 @@
-name: Deploy App
+# .github/workflows/deploy.yml
+name: Deploy to Production
 
 on:
   push:
-    branches:
-      - main  
+    branches: main 
+  workflow_dispatch:  
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    
     steps:
-      - name: Setup SSH agent and add key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Deploy to EC2
-        run: |
-          ssh -o StrictHostKeyChecking=no root@${{ secrets.HOST }} << 'EOF'
-            set -e  # Exit on any error
-            
-            echo "=== Starting Node.js deployment ==="
-            
-            # Fix git ownership issue
-            git config --global --add safe.directory /var/www/zikor.shop
-            
-            # Change to project directory
-            cd /var/www/zikor.shop
-            
-            echo "=== Force updating to latest version ==="
-            git fetch origin
-            git reset --hard origin/main
-            git clean -fd
-            
-            echo "=== Cleaning old files ==="
-            rm -rf node_modules
-            rm -rf .next
-            
-            echo "=== Installing dependencies ==="
-            npm install --legacy-peer-deps
-            
-            echo "=== Building application ==="
-            npm run build
-            
-            echo "=== Managing PM2 process ==="
-            # Stop PM2 process if running
-            pm2 stop zikor || echo "Process wasn't running"
-            pm2 delete zikor || echo "Process didn't exist"
-            
-            # Ensure proper permissions for the built app
-            chmod -R 755 /var/www/zikor.shop
-            
-            # Start fresh PM2 process
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '22'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm install --legacy-peer-deps
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: ${{ secrets.PORT || 22 }}
+        script: |
+          set -e  # Exit on any error
+          
+          echo "🚀 Starting deployment....."
+          
+          # Navigate to project directory
+          cd /var/www/zikor.shop
+          
+          # Fix git ownership issues
+          sudo chown -R root:root .git
+          git config --global --add safe.directory /var/www/zikor.shop
+          
+          # Pull latest changes
+          echo "⬇️ Pulling latest changes..."
+          git fetch origin
+          git reset --hard origin/main
+          
+          # Clean and fix permissions
+          echo "🧹 Cleaning old build files..."
+          sudo rm -rf .next
+          sudo rm -rf node_modules
+          
+          # Install dependencies with legacy peer deps
+          echo "📚 Installing dependencies..."
+          npm install --legacy-peer-deps
+          
+          # Build application
+          echo "🔨 Building application..."
+          npm run build
+          
+          # Check if PM2 process exists and handle accordingly
+          echo "🔄 Managing PM2 process..."
+          if pm2 describe zikor > /dev/null 2>&1; then
+            echo "Restarting existing PM2 process..."
+            pm2 restart zikor
+          else
+            echo "Starting new PM2 process..."
             pm2 start npm --name "zikor" -- start
-            
-            # Save PM2 configuration
-            pm2 save
-            
-            # Show PM2 status
-            pm2 status
-            
-            echo "=== Deployment completed successfully ==="
-          EOF
+          fi
+          
+          # Wait a moment and check status
+          sleep 3
+          pm2 status
+          
+          echo "✅ Deployment completed successfully!"
+          
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "✅ Deployment successful!"
+        else
+          echo "❌ Deployment failed!"
+        fi
