@@ -73,13 +73,12 @@ const ProductsPage = () => {
     topPerforming: 0
   });
 
-  // Modal states
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
 
-  // Data fetching
+ 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
